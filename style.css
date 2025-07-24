@@ -45,6 +45,14 @@
 
     /* Dimensiones */
     --nav-height: 60px;
+
+    /* Variables para el Lector de Números */
+    --ln-color-fondo: #f8f9fa;
+    --ln-color-texto-principal: #333;
+    --ln-color-entero: #0d6efd;
+    --ln-color-decimal: #198754;
+    --ln-color-coma: #dc3545;
+    --ln-color-placeholder: #6c757d;
 }
 
 /* --- RESET Y ESTILOS BASE --- */
@@ -471,6 +479,93 @@ header .subtitle a:hover {
     color: var(--color-display-text);
     word-break: break-all;
 }
+
+
+/* ======================================================= */
+/* --- ESTILOS PARA LA NUEVA BARRA LATERAL Y MODAL --- */
+/* ======================================================= */
+
+.sidebar-wrapper {
+    position: fixed; top: 20px; left: 20px; z-index: 1050;
+}
+.bubble-main {
+    width: 65px; height: 65px;
+}
+.bubble-btn {
+    width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    padding: 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); transition: all 0.2s ease;
+}
+.bubble-btn:hover {
+    transform: scale(1.1); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+}
+.bubble-sub {
+    width: 45px; height: 45px;
+}
+.bubble-sub i {
+    font-size: 1.2rem;
+}
+.bubble-main {
+    transition: transform 0.3s ease-in-out;
+}
+.bubble-main[aria-expanded="true"] {
+    transform: rotate(45deg);
+}
+
+/* ESTILOS PARA EL LECTOR DE NÚMEROS (DENTRO DEL MODAL) */
+.modal-body .input-section { margin-bottom: 2rem; text-align: center; }
+.modal-body .input-section label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 1.1rem; }
+.modal-body .input-section input {
+    font-family: 'Roboto Mono', monospace; padding: 0.75rem; border: 1px solid #ccc;
+    border-radius: 8px; font-size: 1.5rem; width: 100%; max-width: 400px; text-align: center;
+}
+
+.modal-body .card {
+    background: #ffffff; padding: 1.5rem; border-radius: 12px; border: 1px solid #e0e0e0;
+    margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); color: #000;
+}
+.modal-body .card h2 {
+    margin-top: 0; margin-bottom: 1rem; font-size: 1.25rem;
+    color: var(--ln-color-texto-principal); border-bottom: 1px solid #eee; padding-bottom: 0.75rem;
+}
+
+.modal-body .result-box {
+    padding: 1rem; border-radius: 8px; min-height: 50px; display: flex; align-items: center;
+    justify-content: center; background-color: var(--ln-color-fondo); font-size: 1.2rem;
+    font-family: 'Roboto', sans-serif; transition: background-color 0.3s;
+}
+.modal-body .placeholder-text { color: var(--ln-color-placeholder); font-style: italic; }
+
+.modal-body .phonetic-box {
+    font-family: 'Roboto Mono', monospace; font-weight: 700; letter-spacing: 1px;
+    word-spacing: 10px; flex-wrap: wrap;
+}
+.modal-body .phonetic-box .palabra-fonetica {
+    padding: 2px 5px; transition: background-color 0.2s, color 0.2s; border-radius: 4px;
+}
+
+.modal-body .svg-box { padding: 0; background-color: transparent; overflow-x: auto; }
+.modal-body .svg-box svg { display: block; width: 100%; max-height: 250px; }
+.modal-body .svg-etiqueta-principal {
+    font-family: 'Roboto', sans-serif; font-size: 18px; font-weight: 700;
+    text-transform: uppercase; fill: #555;
+}
+.modal-body .svg-etiqueta-vertical {
+    font-family: 'Roboto', sans-serif; font-size: 14px;
+    text-transform: uppercase; fill: var(--ln-color-decimal);
+}
+.modal-body .svg-numero { font-family: 'Roboto Mono', monospace; font-size: 5rem; font-weight: 700; }
+
+.modal-body .highlight {
+    background-color: var(--ln-color-entero) !important; color: white !important;
+    fill: white !important; transition: background-color 0.1s, color 0.1s;
+}
+
+.modal-body .play-btn {
+    margin-top: 1rem; padding: 0.5rem 1rem; font-size: 1rem; border-radius: 20px;
+    border: 1px solid #ccc; background: #fff; cursor: pointer; color: #333;
+    transition: background-color 0.2s, transform 0.2s;
+}
+.modal-body .play-btn:hover { background-color: #f0f0f0; transform: translateY(-2px); }
 
 
 /* ======================================================= */
