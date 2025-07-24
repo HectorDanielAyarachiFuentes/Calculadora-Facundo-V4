@@ -1,0 +1,645 @@
+/* ======================================================= */
+/* --- style.css (VERSIÓN REFACTORIZADA Y OPTIMIZADA) --- */
+/* ======================================================= */
+
+/* --- FUENTES Y VARIABLES GLOBALES --- */
+/* 
+  Fuentes importadas con un propósito específico:
+  - Quicksand: Legible y amigable, ideal para texto general y escolar.
+  - Chakra Petch: Estilo digital/mecánico para botones y pantalla.
+  - Titillium Web: Moderna y técnica para el título principal.
+  - Outfit: Limpia y funcional para la navegación.
+*/
+@import url('https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;700&family=Quicksand:wght@400;700&family=Outfit:wght@400;700&family=Titillium+Web:wght@700&display=swap');
+
+:root {
+    /* Paleta de Colores */
+    --bg-main: #121212;
+    --bg-grid-lines: rgba(200, 200, 200, 0.04);
+    --bg-display: #1a1a1a;
+    --bg-keyboard: #000;
+    --bg-output-screen: #111;
+    --history-panel-bg: #1f1f1f;
+    --history-header-bg: #2b2b2b;
+    --nav-bg: #333;
+
+    --color-display-text: #f0e68c;
+    --history-text-color: #e0e0e0;
+    --history-input-color: #b0b0b0;
+    --history-border-color: #404040;
+    --history-hover-bg: #333333;
+    --color-lineas-output: #ddd;
+    --color-error: #e84d4d;
+    --focus-color: #66FF66;
+
+    /* Colores de Botones */
+    --btn-num-bg: #FFFF66;
+    --btn-op-bg: #FF3333;
+    --btn-special-bg: #6666FF;
+    --btn-equal-bg: #66FF66;
+    --btn-text-color: #000;
+    --btn-disabled-bg: #333;
+    --btn-disabled-text: #666;
+    --history-clear-btn-bg: #e74c3c;
+    --history-clear-btn-hover-bg: #c0392b;
+
+    /* Dimensiones */
+    --nav-height: 60px;
+}
+
+/* --- RESET Y ESTILOS BASE --- */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+/* Fuente base */
+body {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100dvh;
+    padding: 20px;
+    background-color: var(--bg-main);
+    background-image: repeating-linear-gradient(90deg, var(--bg-grid-lines) 0 1px, transparent 1px 96px), repeating-linear-gradient(0deg, var(--bg-grid-lines) 0 1px, transparent 1px 96px);
+    font-family: 'Quicksand', sans-serif;
+    overflow: hidden;
+}
+
+button {
+    border: none;
+    outline: none;
+    font-family: inherit;
+    cursor: pointer;
+}
+
+/* Estilo de foco consistente para accesibilidad */
+a:focus-visible,
+button:focus-visible {
+    outline: 2px solid var(--focus-color);
+    outline-offset: 2px;
+}
+
+/* ======================================================= */
+/* --- ESTRUCTURA PRINCIPAL Y COMPONENTES --- */
+/* ======================================================= */
+
+/* --- Contenedor Principal --- */
+.calculator-container {
+    position: relative;
+    width: 100%;
+    max-width: 480px;
+    opacity: 0;
+    transition: opacity 1s;
+}
+
+/* --- Título (Header) --- */
+header[role="banner"] {
+    margin-bottom: 25px;
+    text-align: center;
+}
+
+/* Título principal: Titillium Web (moderno, técnico) */
+header h1 {
+    font-family: 'Titillium Web', sans-serif;
+    font-size: clamp(1.5rem, 6vw, 3.5rem);
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: 2px;
+    color: var(--color-error);
+    text-transform: uppercase;
+    text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
+}
+
+header h1 span {
+    color: #4de89d;
+}
+
+/* Subtítulo: Quicksand (heredado de body) */
+header .subtitle {
+    margin-top: 15px;
+    font-size: clamp(0.7rem, 2vw, 0.9rem);
+    color: var(--color-error);
+    opacity: 0.8;
+}
+
+header .subtitle a {
+    color: var(--btn-special-bg);
+    font-weight: bold;
+    text-decoration: underline;
+    transition: color 0.2s ease;
+}
+
+header .subtitle a:hover {
+    color: #4de89d;
+}
+
+/* --- Pantalla de la Calculadora (Display) --- */
+/* Fuente: Chakra Petch (digital, moderno) */
+.display {
+    display: flex;
+    justify-content: flex-end;
+    align-items: center;
+    width: 100%;
+    min-height: 65px;
+    margin-bottom: 15px;
+    padding: 20px;
+    background-color: var(--bg-display);
+    color: var(--color-display-text);
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 2.2rem;
+    text-align: right;
+    border-radius: 10px;
+    word-wrap: break-word;
+    overflow: hidden;
+}
+
+/* --- Contenedor de Teclado y Salida --- */
+.keyboard-container {
+    position: relative;
+    width: 100%;
+    aspect-ratio: 1 / 1;
+    background-color: var(--bg-keyboard);
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+    overflow: hidden;
+}
+
+/* --- Teclado (Keyboard) --- */
+.keyboard {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    grid-template-rows: repeat(5, 1fr);
+    gap: 2px;
+    width: 100%;
+    height: 100%;
+    transition: top 0.5s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.keyboard--hidden {
+    top: 100%;
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Botones: Chakra Petch (digital, moderno) */
+.keyboard__button {
+    position: relative; /* Para el efecto hover */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--btn-text-color);
+    font-family: 'Chakra Petch', sans-serif;
+    font-size: 1.4rem;
+    border: 2px solid #000;
+    overflow: hidden; /* Para el efecto hover */
+    transition: transform 0.1s ease, background-color 0.2s ease;
+}
+
+/* --- Variantes de Botones --- */
+.keyboard__button--number { background-color: var(--btn-num-bg); }
+.keyboard__button--operator { background-color: var(--btn-op-bg); }
+.keyboard__button--special { background-color: var(--btn-special-bg); font-size: 0.8em; }
+.keyboard__button--equals { background-color: var(--btn-equal-bg); }
+.keyboard__button--double-width { grid-column: span 2; }
+.keyboard__button--triple-width { grid-column: span 3; }
+
+/* --- Estado de Botones (Hover y Deshabilitado) --- */
+.keyboard__button:not(:disabled):hover {
+    background: linear-gradient(90deg, #ff0000, #ff8000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff);
+    background-size: 200% 200%;
+    animation: arcoiris 2s linear infinite;
+    transform: scale(1.05);
+}
+
+/* Regla única y consolidada para botones deshabilitados */
+.keyboard__button:disabled {
+    background-color: var(--btn-disabled-bg) !important; /* !important para sobreescribir estilos base */
+    color: var(--btn-disabled-text);
+    cursor: not-allowed;
+    animation: none !important;
+    transform: none !important;
+}
+
+/* --- Pantalla de Salida (Output Screen) --- */
+.output-screen {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    width: 100%;
+    height: calc(100% - var(--nav-height));
+    padding: 15px;
+    background-color: var(--bg-output-screen);
+    opacity: 0;
+    pointer-events: none;
+    overflow: auto;
+    transition: opacity 0.3s ease-in-out;
+}
+
+.output-screen--visible {
+    opacity: 1;
+    pointer-events: all;
+}
+
+/* Celdas de salida: Quicksand (heredado de body) */
+.output-grid__cell {
+    position: absolute;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+.output-grid__line {
+    position: absolute;
+    background-color: var(--color-lineas-output);
+}
+.output-grid__cell--dividendo { color: #ff8c00; }
+.output-grid__cell--divisor { color: #6495ed; }
+.output-grid__cell--cociente { color: #00ff00; }
+.output-grid__cell--producto { color: #ccc; }
+.output-grid__cell--resto { color: #f08080; }
+.output-grid__cell--suma-intermedia { 
+    color: #f0ad4e;
+    font-weight: bold;
+    z-index: 10;
+    animation: fadeIn 0.3s ease-out;
+}
+
+.output-screen__error-message {
+    position: relative;
+    width: 90%;
+    margin: auto;
+    color: var(--color-error);
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+/* --- Navegación Inferior (Bottom Nav) --- */
+.bottom-nav {
+    position: absolute;
+    bottom: -100%;
+    left: 0;
+    z-index: 3;
+    display: flex;
+    justify-content: space-around;
+    align-items: center;
+    gap: 8px;
+    width: 100%;
+    height: var(--nav-height);
+    padding: 10px;
+    background-color: var(--nav-bg);
+    opacity: 0;
+    pointer-events: none;
+    transition: bottom 0.5s ease-in-out, opacity 0.3s ease-in-out;
+}
+
+.bottom-nav--visible {
+    bottom: 0;
+    opacity: 1;
+    pointer-events: all;
+}
+
+.bottom-nav__button {
+    flex-grow: 1;
+    padding: 10px;
+    background-color: rgba(255, 255, 255, 0.08);
+    color: rgba(255, 255, 255, 0.8);
+    text-align: center;
+    border-radius: 5px;
+    transition: background-color 0.2s, color 0.2s;
+}
+
+.bottom-nav__button:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+}
+
+/* Botón de flecha: Outfit (limpio, funcional) */
+.bottom-nav__button--arrow {
+    font-family: 'Outfit', sans-serif;
+    font-size: 1.5rem;
+}
+
+/* --- Panel de Historial (History Panel) --- */
+.history-toggle-btn {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    z-index: 1002;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 50px;
+    height: 50px;
+    background-color: var(--nav-bg);
+    border: 1px solid #555;
+    border-radius: 50%;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+    cursor: pointer;
+    transition: background-color 0.3s, transform 0.2s, opacity 0.3s;
+}
+
+.history-toggle-btn:hover {
+    background-color: #4CAF50;
+    transform: scale(1.1);
+}
+
+.history-toggle-btn svg {
+    width: 28px;
+    height: 28px;
+    fill: #eee;
+}
+
+.history-panel.history-panel--open + .history-toggle-btn {
+    opacity: 0;
+    pointer-events: none;
+}
+
+/* Panel principal: Quicksand para todo el texto por herencia */
+.history-panel {
+    position: fixed;
+    top: 0;
+    right: -100%;
+    z-index: 1000;
+    display: flex;
+    flex-direction: column;
+    width: 350px;
+    max-width: 100vw;
+    height: 100dvh;
+    padding-top: env(safe-area-inset-top, 0px);
+    padding-bottom: env(safe-area-inset-bottom, 0px);
+    background-color: var(--history-panel-bg);
+    box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
+    font-family: 'Quicksand', sans-serif; /* Fuente base para todo el panel */
+    visibility: hidden;
+    transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.history-panel--open {
+    right: 0;
+    visibility: visible;
+}
+
+.history-panel__header {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    flex-shrink: 0;
+    padding: 15px 20px;
+    background-color: var(--history-header-bg);
+    border-bottom: 1px solid var(--history-border-color);
+}
+
+.history-panel__title {
+    margin: 0;
+    font-size: 1.3em;
+    font-weight: bold;
+    color: var(--history-text-color);
+}
+
+/* Botón Limpiar: Chakra Petch */
+.history-panel__clear-btn {
+    flex-shrink: 0;
+    margin-left: 20px;
+    padding: 8px 15px;
+    background-color: var(--history-clear-btn-bg);
+    color: #fff;
+    font-family: 'Chakra Petch', sans-serif; /* Sobreescribe la fuente heredada */
+    font-size: 0.85em;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-radius: 20px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2);
+    cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
+}
+
+.history-panel__clear-btn:hover {
+    background-color: var(--history-clear-btn-hover-bg);
+    transform: scale(1.05);
+}
+
+.history-panel__list {
+    flex-grow: 1;
+    margin: 0;
+    padding: 0 10px 10px;
+    list-style: none;
+    color: var(--history-text-color);
+    overflow-y: auto;
+}
+
+.history-panel__item {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    padding: 12px 10px;
+    border-bottom: 1px solid var(--history-border-color);
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+.history-panel__item:last-child {
+    border-bottom: none;
+}
+
+.history-panel__item:hover {
+    background-color: var(--history-hover-bg);
+}
+
+.history-panel__item.history-item-highlight {
+    /* No necesita transition, la animación se encarga de todo */
+    animation: history-item-highlight 1.5s ease-out forwards;
+}
+
+.history-panel__input {
+    font-size: 0.95em;
+    line-height: 1.3;
+    color: var(--history-input-color);
+    word-break: break-all;
+}
+
+.history-panel__result {
+    display: block;
+    margin-top: 6px;
+    font-size: 1.2em;
+    font-weight: bold;
+    color: var(--color-display-text);
+    word-break: break-all;
+}
+
+
+/* ======================================================= */
+/* --- ANIMACIONES GLOBALES (@keyframes) --- */
+/* ======================================================= */
+
+/* Animación de entrada para elementos */
+@keyframes fadeInScale-animation {
+    to {
+        opacity: 1;
+        transform: scale(1);
+    }
+}
+.animate-fade-in-scale {
+    opacity: 0;
+    transform: scale(0.5);
+    animation: fadeInScale-animation 0.5s forwards cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Animación de hover para botones */
+@keyframes arcoiris {
+    0% { background-position: 0% 50% }
+    50% { background-position: 100% 50% }
+    100% { background-position: 0% 50% }
+}
+
+/* Animación de pulso consolidada (para resta, suma, etc.) */
+@keyframes pulse {
+    0%, 100% { transform: scale(1); opacity: 1; }
+    50% { transform: scale(1.2); opacity: 0.8; }
+}
+.pulse {
+    animation: pulse 0.5s ease-in-out;
+}
+
+/* Animación de entrada para celdas de suma */
+@keyframes fadeIn {
+    from { transform: scale(0.8); opacity: 0; }
+    to { transform: scale(1); opacity: 1; }
+}
+
+/* Animación de resaltado para ítems del historial */
+@keyframes history-item-highlight {
+    0% {
+        background-color: transparent;
+        transform: scale(1);
+    }
+    50% {
+        background-color: rgba(76, 175, 80, 0.4);
+        transform: scale(1.02);
+    }
+    100% {
+        background-color: transparent;
+        transform: scale(1);
+    }
+}
+/* Color del mensaje de error */
+
+ .error {color: white;
+    }
+
+
+
+/* ======================================================= */
+/* --- MEDIA QUERIES PARA VISTAS MÓVILES (PANTALLA COMPLETA) --- */
+/* ======================================================= */
+
+@media (max-width: 600px) {
+
+    /* === Reset y base === */
+    html {
+        /* Es una buena práctica aplicar el box-sizing a todo */
+        box-sizing: border-box;
+    }
+    *, *:before, *:after {
+        box-sizing: inherit;
+    }
+
+    body {
+        margin: 0;
+        padding: 0;
+        /* Usa min-height en lugar de height. Permite que el contenido crezca y haga scroll si es necesario. */
+        min-height: 100vh;
+        /* overflow: hidden; <-- ELIMINADO. Este era el principal problema. */
+
+        /* --- NUEVO: Usamos Flexbox para el layout principal --- */
+        display: flex;
+        flex-direction: column; /* Apila los elementos verticalmente */
+
+        /* --- Padding que respeta las áreas seguras en todos los lados --- */
+        /* Agregamos un poco de espacio (20px) extra en la parte inferior para que no quede pegado a la barra de navegación */
+        padding-top: env(safe-area-inset-top, 10px);
+        padding-right: env(safe-area-inset-right, 10px);
+        padding-bottom: env(safe-area-inset-bottom, 20px);
+        padding-left: env(safe-area-inset-left, 10px);
+    }
+
+    /* === Contenedor principal === */
+    #contenedor {
+        width: 100% !important;
+        max-width: none !important;
+        margin-bottom: 0; /* Ya no es necesario, el padding del body y flexbox lo gestionan */
+
+        /* --- NUEVO: Hacemos que el contenedor también sea flexible --- */
+        display: flex;
+        flex-direction: column;
+        /* flex-grow: 1; hará que este contenedor intente ocupar todo el espacio vertical disponible */
+        flex-grow: 1;
+    }
+
+    /* === Pantalla y teclado === */
+    #cuerpoteclado {
+        width: 100% !important; /* Usar 100% en lugar de 'auto' para asegurar que ocupe el ancho del contenedor */
+        height: auto !important;
+        
+        /* --- NUEVO: Hacemos que el cuerpo del teclado ocupe el espacio restante --- */
+        display: flex;
+        flex-direction: column;
+        flex-grow: 1; /* Esto empujará el teclado hacia abajo, ocupando el espacio disponible */
+    }
+
+    #teclado {
+        /* Hacemos que la grilla de botones también ocupe el espacio vertical que le da su padre */
+        height: 100%;
+    }
+
+    #display {
+        font-size: 10vw !important;
+        padding: 15px;
+        /* Evita que la pantalla se encoja si el contenido es grande */
+        flex-shrink: 0;
+    }
+
+    #salida {
+        font-size: 5vw !important;
+    }
+
+    /* === Botones === */
+    #teclado button {
+        font-size: 6vw;
+    }
+
+    #volver {
+        font-size: 7vw !important;
+    }
+
+    #botexp, #botnor {
+        font-size: 3.5vw !important;
+        padding: 8px;
+    }
+
+    /* === Encabezado === */
+    header {
+        /* Evita que el header se encoja */
+        flex-shrink: 0;
+    }
+    
+    header h1 {
+        font-size: 12vw !important;
+        letter-spacing: 1px !important;
+    }
+
+    header .subtitle {
+        font-size: 3.5vw !important;
+    }
+
+    /* === Mensajes de error === */
+    .error {
+        font-size: 4.5vw !important;
+        padding-top: 25%;
+    }
+}
