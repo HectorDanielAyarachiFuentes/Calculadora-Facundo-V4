@@ -1,5 +1,5 @@
 // =======================================================
-// --- operations/modules/addition.js (VERSIÓN FINAL Y CORREGIDA) ---
+// --- operations/modules/addition.js (VERSIÓN CON ALINEACIÓN CORREGIDA) ---
 // =======================================================
 "use strict";
 
@@ -10,47 +10,69 @@ import { salida } from '../../config.js';
 export async function suma(numerosAR) {
     salida.innerHTML = "";
 
-    // --- 1. CÁLCULOS Y LAYOUT (LÓGICA MEJORADA) ---
-    let total = 0n;
-    numerosAR.forEach(n => total += BigInt(n[0]));
-    const resultadoRaw = total.toString();
+    // --- 1. Normalización para alinear decimales ---
+    const partesOperandos = numerosAR.map(([valor, dec]) => {
+        const valStr = valor.toString();
+        const intPart = (valStr.length > dec) ? valStr.slice(0, valStr.length - dec) : '0';
+        const decPart = valStr.slice(valStr.length - dec).padStart(dec, '0');
+        return { intPart, decPart };
+    });
 
-    // El ancho se basa en el número más largo: el operando más largo o el resultado.
-    const longitudMaxOperandos = Math.max(...numerosAR.map(n => n[0].length));
-    const longitudMaximaTotal = Math.max(longitudMaxOperandos, resultadoRaw.length);
+    const maxIntLength = Math.max(...partesOperandos.map(p => p.intPart.length));
+    const maxDecLength = Math.max(...partesOperandos.map(p => p.decPart.length));
     
-    // Los operandos se rellenan para el cálculo interno.
-    const operandosParaCalcular = numerosAR.map(n => n[0].padStart(longitudMaximaTotal, '0'));
-    
-    const anchoGridEnCeldas = longitudMaximaTotal + 1;
+    // Calcula la longitud MÁXIMA de un operando tal como se muestra en pantalla (incluyendo la coma)
+    const maxDisplayLength = Math.max(...partesOperandos.map(p => {
+        const len = p.intPart.length + p.decPart.length;
+        return p.decPart.length > 0 ? len + 1 : len;
+    }));
+
+    // El ancho de la cuadrícula es el del número más largo + 1 para el signo de suma
+    const anchoGridEnCeldas = maxDisplayLength + 1;
     const altoGridEnCeldas = numerosAR.length + 4;
+
+    const operandosParaCalcular = partesOperandos.map(p =>
+        p.intPart.padStart(maxIntLength, '0') + p.decPart.padEnd(maxDecLength, '0')
+    );
+    const longitudMaximaTotal = operandosParaCalcular[0].length;
+
+    // --- 2. CÁLCULOS Y LAYOUT ---
+    let total = 0n;
+    operandosParaCalcular.forEach(n => total += BigInt(n));
+    let resultadoRaw = total.toString();
     const { tamCel, tamFuente, offsetHorizontal, paddingLeft, paddingTop } = calculateLayout(salida, anchoGridEnCeldas, altoGridEnCeldas);
     
-    // --- 2. DIBUJO DE ELEMENTOS ESTÁTICOS ---
+    // --- 3. DIBUJO DE ELEMENTOS ESTÁTICOS ---
     const fragmentEstatico = document.createDocumentFragment();
     let yPos = paddingTop + 2.5 * tamCel; 
-    
-    // Dibujamos los operandos originales, alineados a la derecha.
-    numerosAR.forEach((nArr) => {
-        const numStr = nArr[0];
-        for (let i = 0; i < numStr.length; i++) {
-            const colOffset = longitudMaximaTotal - numStr.length;
-            const cellLeft = offsetHorizontal + (i + colOffset + 1) * tamCel + paddingLeft;
-            fragmentEstatico.appendChild(crearCelda("output-grid__cell output-grid__cell--dividendo", numStr[i], { left: `${cellLeft}px`, top: `${yPos}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: `${tamFuente}px` }));
+
+    // Dibujar operandos, alineados a la derecha
+    partesOperandos.forEach((p) => {
+        let displayStr = p.decPart.length > 0 ? `${p.intPart},${p.decPart}` : p.intPart;
+        
+        for (let i = 0; i < displayStr.length; i++) {
+            const char = displayStr[displayStr.length - 1 - i];
+            const col = anchoGridEnCeldas - 1 - i; // Columna desde la izquierda, contando desde el borde derecho
+            const cellLeft = offsetHorizontal + col * tamCel + paddingLeft;
+            const cellClass = (char === ',') ? "output-grid__cell--producto" : "output-grid__cell--dividendo";
+            fragmentEstatico.appendChild(crearCelda(`output-grid__cell ${cellClass}`, char, { left: `${cellLeft}px`, top: `${yPos}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: `${tamFuente}px` }));
         }
         yPos += tamCel;
     });
-    
-    const signLeft = offsetHorizontal + (longitudMaximaTotal - longitudMaxOperandos) * tamCel + paddingLeft;
+
+    // Dibujar el signo de suma (+) en la columna correcta
+    const signCol = anchoGridEnCeldas - maxDisplayLength - 1;
+    const signLeft = offsetHorizontal + signCol * tamCel + paddingLeft;
     const signTop = yPos - tamCel;
     fragmentEstatico.appendChild(crearCelda("output-grid__cell output-grid__cell--producto", "+", { left: `${signLeft}px`, top: `${signTop}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: `${tamFuente}px`, textAlign: 'center' }));
     
-    const lineLeft = offsetHorizontal + tamCel + paddingLeft;
-    const lineWidth = (anchoGridEnCeldas - 1) * tamCel;
+    // Dibujar línea de suma
+    const lineLeft = offsetHorizontal + signCol * tamCel + paddingLeft;
+    const lineWidth = (anchoGridEnCeldas - signCol) * tamCel;
     fragmentEstatico.appendChild(crearCelda("output-grid__line", "", { left: `${lineLeft}px`, top: `${yPos}px`, width: `${lineWidth}px`, height: `2px` }));
     salida.appendChild(fragmentEstatico);
 
-    // --- 3. LÓGICA DE VISUALIZACIÓN INTERACTIVA ---
+    // --- 4. LÓGICA DE VISUALIZACIÓN INTERACTIVA (SUMAS Y LLEVADAS) ---
     let carry = 0;
     const topPosSumaIntermedia = paddingTop + 0.1 * tamCel;
     const topPosLlevada = paddingTop + 1.1 * tamCel;
@@ -61,26 +83,34 @@ export async function suma(numerosAR) {
         operandosParaCalcular.forEach(n => sumaColumna += parseInt(n[i] || '0'));
         
         const sumaStr = sumaColumna.toString();
-        const digitoResultado = sumaColumna % 10;
         const newCarry = Math.floor(sumaColumna / 10);
+        
+        // Mapear la columna de cálculo a la columna visual correcta
+        const digitsToTheRight = (longitudMaximaTotal - 1) - i;
+        const hasCommaToTheRight = maxDecLength > 0 && digitsToTheRight >= maxDecLength;
+        const visualCellsToTheRight = digitsToTheRight + (hasCommaToTheRight ? 1 : 0);
+        const visualCol = anchoGridEnCeldas - 1 - visualCellsToTheRight;
 
-        // Animación temporal (centrada)
-        const xPosColumna = offsetHorizontal + (i + 1) * tamCel + paddingLeft;
+        const xPosColumna = offsetHorizontal + visualCol * tamCel + paddingLeft;
+        
+        // Animación de la suma intermedia
         const centroDeColumna = xPosColumna + (tamCel / 2);
         const anchoCeldaTemp = tamCel * sumaStr.length * 0.7;
         const leftPosTemp = centroDeColumna - (anchoCeldaTemp / 2);
-
         const celdaTemp = crearCelda("output-grid__cell output-grid__cell--suma-intermedia", sumaStr, { left: `${leftPosTemp}px`, top: `${topPosSumaIntermedia}px`, width: `${anchoCeldaTemp}px`, height: `${tamCel}px`, fontSize: `${tamFuente * 0.8}px` });
         salida.appendChild(celdaTemp);
         await esperar(1500);
         celdaTemp.remove();
-
-        sumasIntermediasData.push({ value: sumaStr, column: i });
+        sumasIntermediasData.push({ value: sumaStr, x: leftPosTemp, width: anchoCeldaTemp });
 
         // Animación de la llevada
         if (newCarry > 0) {
-            const colLlevada = i - 1;
-            const leftBase = offsetHorizontal + (colLlevada + 1) * tamCel + paddingLeft;
+            const carryDigitsToRight = digitsToTheRight + 1;
+            const carryHasCommaToRight = maxDecLength > 0 && carryDigitsToRight >= maxDecLength;
+            const carryVisualCellsToRight = carryDigitsToRight + (carryHasCommaToRight ? 1 : 0);
+            const carryVisualCol = anchoGridEnCeldas - 1 - carryVisualCellsToRight;
+            
+            const leftBase = offsetHorizontal + carryVisualCol * tamCel + paddingLeft;
             const numeroLlevada = crearCelda("output-grid__cell output-grid__cell--resto", newCarry.toString(), { left: `${leftBase}px`, top: `${topPosLlevada}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: `${tamFuente * 0.7}px`, textAlign: 'center' });
             const topFlecha = topPosLlevada + tamCel * 0.8;
             const altoFlecha = (paddingTop + 2.5 * tamCel) - topFlecha; 
@@ -90,27 +120,30 @@ export async function suma(numerosAR) {
             salida.appendChild(numeroLlevada);
             salida.appendChild(flecha);
         }
-
         carry = newCarry;
         await esperar(500);
     }
     
-    // --- 4. DIBUJO DEL RESULTADO FINAL (CORREGIDO) ---
+    // --- 5. DIBUJO DEL RESULTADO FINAL ---
+    let resultadoDisplay = resultadoRaw;
+    if (maxDecLength > 0) {
+        let resPadded = resultadoRaw.padStart(maxDecLength + 1, '0');
+        resultadoDisplay = resPadded.slice(0, resPadded.length - maxDecLength) + ',' + resPadded.slice(resPadded.length - maxDecLength);
+    }
+    
     const yPosResultado = yPos + tamCel * 0.2;
-    for (let i = 0; i < resultadoRaw.length; i++) {
-        const colOffset = longitudMaximaTotal - resultadoRaw.length;
-        const cellLeft = offsetHorizontal + (i + colOffset + 1) * tamCel + paddingLeft;
-        salida.appendChild(crearCelda("output-grid__cell output-grid__cell--cociente", resultadoRaw[i], { left: `${cellLeft}px`, top: `${yPosResultado}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: `${tamFuente}px` }));
+    for (let i = 0; i < resultadoDisplay.length; i++) {
+        const char = resultadoDisplay[resultadoDisplay.length - 1 - i];
+        const col = anchoGridEnCeldas - 1 - i;
+        const cellLeft = offsetHorizontal + col * tamCel + paddingLeft;
+        const cellClass = (char === ',') ? "output-grid__cell--producto" : "output-grid__cell--cociente";
+        salida.appendChild(crearCelda(`output-grid__cell ${cellClass}`, char, { left: `${cellLeft}px`, top: `${yPosResultado}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: `${tamFuente}px` }));
     }
 
-    // --- 5. VISTA FINAL ESTÁTICA ---
+    // --- 6. VISTA FINAL ESTÁTICA ---
     await esperar(100);
     sumasIntermediasData.forEach(data => {
-        const xPosColumna = offsetHorizontal + (data.column + 1) * tamCel + paddingLeft;
-        const centroDeColumna = xPosColumna + (tamCel / 2);
-        const anchoCeldaFinal = tamCel * data.value.length * 0.7;
-        const leftPosFinal = centroDeColumna - (anchoCeldaFinal / 2);
-        const celdaFinal = crearCelda("output-grid__cell output-grid__cell--suma-intermedia", data.value, { left: `${leftPosFinal}px`, top: `${topPosSumaIntermedia}px`, width: `${anchoCeldaFinal}px`, height: `${tamCel}px`, fontSize: `${tamFuente * 0.8}px` });
+        const celdaFinal = crearCelda("output-grid__cell output-grid__cell--suma-intermedia", data.value, { left: `${data.x}px`, top: `${topPosSumaIntermedia}px`, width: `${data.width}px`, height: `${tamCel}px`, fontSize: `${tamFuente * 0.8}px` });
         celdaFinal.style.opacity = '0';
         salida.appendChild(celdaFinal);
         setTimeout(() => {
