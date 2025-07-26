@@ -116,43 +116,43 @@ class HistoryPanelClass {
         });
     }
 
-    // *** ¡FUNCIÓN CLAVE CORREGIDA PARA LA DIVISIÓN! ***
-    // Extrae el texto del resultado de forma inteligente, tratando la división como un caso especial.
+    // *** ¡FUNCIÓN CLAVE ACTUALIZADA PARA FACTORES PRIMOS! ***
     extractResultText(htmlString) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlString;
 
-        // 1. Detectar si es una operación de división por la presencia de celdas de divisor y cociente.
-        const isDivision = tempDiv.querySelector('.output-grid__cell--divisor') && tempDiv.querySelector('.output-grid__cell--cociente');
-
-        if (isDivision) {
-            // 2. Para la división, el resultado son *únicamente* las celdas del cociente.
-            // Esto evita que se seleccionen los productos intermedios que están más abajo.
-            const cocienteCells = Array.from(tempDiv.querySelectorAll('.output-grid__cell--cociente'));
-            
-            cocienteCells.sort((a, b) => {
-                const leftA = parseFloat(a.style.left) || 0;
-                const leftB = parseFloat(b.style.left) || 0;
-                return leftA - leftB;
-            });
-
-            // 3. Unir el texto y normalizar el separador decimal a una coma para consistencia.
-            const rawResult = cocienteCells.map(cell => cell.textContent).join('');
+        // --- Caso 1: División ---
+        // Distintivo: tiene celdas de divisor Y de cociente.
+        const hasDivisorCells = tempDiv.querySelector('.output-grid__cell--divisor');
+        const hasCocienteCells = tempDiv.querySelector('.output-grid__cell--cociente');
+        
+        if (hasDivisorCells && hasCocienteCells) {
+            const cocienteCellsArr = Array.from(tempDiv.querySelectorAll('.output-grid__cell--cociente'));
+            cocienteCellsArr.sort((a, b) => (parseFloat(a.style.left) || 0) - (parseFloat(b.style.left) || 0));
+            const rawResult = cocienteCellsArr.map(cell => cell.textContent).join('');
             return rawResult.replace('.', ',');
         }
+        
+        // --- Caso 2: Factores Primos ---
+        // Distintivo: tiene celdas de divisor pero NO de cociente.
+        if (hasDivisorCells && !hasCocienteCells) {
+            const factorCells = Array.from(tempDiv.querySelectorAll('.output-grid__cell--divisor'));
+            factorCells.sort((a, b) => (parseFloat(a.style.top) || 0) - (parseFloat(b.style.top) || 0));
+            const factors = factorCells.map(cell => cell.textContent);
+            if (factors.length === 1 && factors[0] === '1') {
+                return '1'; // Caso especial para factores(1)
+            }
+            return factors.join(' × ');
+        }
 
-        // --- Lógica original para suma, resta, multiplicación, etc. ---
+        // --- Caso 3: Resto de operaciones (Suma, Resta, Multiplicación, Raíz) ---
+        // El resultado está en la línea más baja de celdas 'cociente' o 'producto'.
         const candidateCells = tempDiv.querySelectorAll('.output-grid__cell--cociente, .output-grid__cell--producto');
 
         if (candidateCells.length === 0) {
             const error = tempDiv.querySelector('.output-screen__error-message');
             if (error) return error.textContent.trim();
-            const allRestos = tempDiv.querySelectorAll('.output-grid__cell--resto');
-            if (allRestos.length > 0) {
-                 const lastResto = allRestos[allRestos.length - 1];
-                 return `Resto: ${lastResto.textContent.trim()}`;
-            }
-            return 'Resultado no disponible';
+            return 'Resultado no disponible'; 
         }
 
         const lines = new Map();
