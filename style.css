@@ -812,3 +812,11 @@ header .subtitle a:hover {
         padding-bottom: env(safe-area-inset-bottom, 10px); 
     }
 }
+
+
+#infoModalLabel {
+  color: #040101;
+  text-align: center;
+  width: 100%;
+  left: 0;
+}
