@@ -2,7 +2,7 @@
 /* --- style.css (VERSIÓN REFACTORIZADA Y OPTIMIZADA) --- */
 /* ======================================================= */
 
-/* --- FUENTES Y VARIABLES GLOBALES --- */
+/* --- 1. FUENTES Y VARIABLES GLOBALES --- */
 /* 
   Fuentes importadas con un propósito específico:
   - Quicksand: Legible y amigable, ideal para texto general y escolar.
@@ -23,7 +23,6 @@
     --history-panel-bg: #1f1f1f;
     --history-header-bg: #2b2b2b;
     --nav-bg: #333;
-    /* --utility-bar-height: 60px; <-- Eliminada, ya no se usa la barra fija superior */
 
     --color-display-text: #f0e68c;
     --history-text-color: #e0e0e0;
@@ -57,27 +56,26 @@
     --ln-color-placeholder: #6c757d;
 }
 
-/* --- RESET Y ESTILOS BASE --- */
+/* --- 2. RESET Y ESTILOS BASE --- */
 * {
     margin: 0;
     padding: 0;
-    box-sizing: border-box; 
+    box-sizing: border-box;
 }
 
-/* Fuente y color base */
 body {
     display: flex;
-    flex-direction: column; /* Apila el main-content-wrapper y el footer verticalmente */
-    justify-content: center; /* Centra el contenido principal verticalmente en el body */
-    align-items: center;     /* Centra el contenido principal horizontalmente en el body */
-    min-height: 100dvh;      /* Ocupa al menos el 100% de la altura visible del viewport */
-    padding: 20px;           /* Un padding general alrededor de todo el bloque de contenido */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    min-height: 100dvh;
+    padding: 20px;
     background-color: var(--bg-main);
-    background-image: repeating-linear-gradient(90deg, var(--bg-grid-lines) 0 1px, transparent 1px 96px), 
+    background-image: repeating-linear-gradient(90deg, var(--bg-grid-lines) 0 1px, transparent 1px 96px),
                       repeating-linear-gradient(0deg, var(--bg-grid-lines) 0 1px, transparent 1px 96px);
     font-family: 'Quicksand', sans-serif;
-    color: #eee; 
-    overflow: hidden; /* Muy importante para evitar el scroll en escritorio */
+    color: #eee;
+    overflow: hidden; /* Evita scroll en escritorio */
 }
 
 button {
@@ -85,42 +83,36 @@ button {
     outline: none;
     font-family: inherit;
     cursor: pointer;
-    line-height: 1.2; 
+    line-height: 1.2;
 }
 
-/* Estilo de foco consistente para accesibilidad */
 a:focus-visible,
 button:focus-visible {
     outline: 2px solid var(--focus-color);
     outline-offset: 2px;
 }
 
-/* Estilo para mensajes de error globales o genéricos */
 .error {
-    color: var(--color-error); 
+    color: var(--color-error);
 }
 
-/* --- Contenedor principal del contenido (header + calculadora) --- */
-/* Este envoltorio asegura que el título y la calculadora se agrupen y se centren juntos. */
+/* --- 3. ESTRUCTURA Y LAYOUT PRINCIPAL --- */
 .main-content-wrapper {
-    flex-grow: 1; /* Permite que este contenedor ocupe todo el espacio vertical disponible */
+    flex-grow: 1;
     display: flex;
-    flex-direction: column; /* Apila el header y la calculadora verticalmente */
-    justify-content: center; /* Centra el header y la calculadora verticalmente dentro de este wrapper */
-    align-items: center;     /* Centra el header y la calculadora horizontalmente dentro de este wrapper */
-    padding-top: 0;          /* No necesita padding top, el body ya lo gestiona */
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding-top: 0;
 }
 
+/* --- 4. COMPONENTES PRINCIPALES --- */
 
-/* ======================================================= */
-/* --- ESTRUCTURA PRINCIPAL Y COMPONENTES --- */
-/* ======================================================= */
-
-/* --- Contenedor Principal de la Calculadora --- */
+/* --- Contenedor de la Calculadora --- */
 .calculator-container {
     position: relative;
     width: 100%;
-    max-width: 480px; /* Ancho fijo para la calculadora en escritorio */
+    max-width: 480px;
     opacity: 0;
     transition: opacity 1s;
 }
@@ -129,48 +121,43 @@ button:focus-visible {
 header[role="banner"] {
     margin-bottom: 25px;
     text-align: center;
-    margin-top: 0; /* Asegura que no haya margin-top adicional */
+    margin-top: 0;
 }
 
-/* Título principal: Titillium Web (moderno, técnico) */
 header h1 {
     font-family: 'Titillium Web', sans-serif;
-    /* --- AJUSTE CLAVE AQUÍ PARA REDUCIR EL TAMAÑO Y HACERLO MÁS COMPACTO --- */
-    font-size: clamp(1.2rem, 3.5vw, 2rem); /* Más pequeño, con un máximo de 2rem */
+    font-size: clamp(1.2rem, 3.5vw, 2rem);
     font-weight: 700;
     line-height: 1;
-    letter-spacing: 1px; /* Ligeramente reducido para compacidad */
-    color: var(--color-error); 
+    letter-spacing: 1px;
+    color: var(--color-error);
     text-transform: uppercase;
     text-shadow: 2px 2px 10px rgba(0, 0, 0, 0.2);
 }
 
 header h1 span {
-    color: #4de89d; /* Color verde del nombre */
+    color: #4de89d;
 }
 
-/* Subtítulo: Quicksand (heredado de body) */
 header .subtitle {
     margin-top: 15px;
-    /* --- AJUSTE CLAVE AQUÍ PARA REDUCIR EL TAMAÑO --- */
-    font-size: clamp(0.6rem, 1.2vw, 0.75rem); /* Más pequeño, con un máximo de 0.75rem */
+    font-size: clamp(0.6rem, 1.2vw, 0.75rem);
     color: var(--color-error);
     opacity: 0.8;
 }
 
 header .subtitle a {
-    color: var(--btn-special-bg); 
+    color: var(--btn-special-bg);
     font-weight: bold;
     text-decoration: underline;
     transition: color 0.2s ease;
 }
 
 header .subtitle a:hover {
-    color: #4de89d; 
+    color: #4de89d;
 }
 
-/* --- Pantalla de la Calculadora (Display) --- */
-/* Fuente: Chakra Petch (digital, moderno) */
+/* --- Pantalla (Display) --- */
 .display {
     display: flex;
     justify-content: flex-end;
@@ -180,20 +167,20 @@ header .subtitle a:hover {
     margin-bottom: 15px;
     padding: 20px;
     background-color: var(--bg-display);
-    color: var(--color-display-text); 
+    color: var(--color-display-text);
     font-family: 'Chakra Petch', sans-serif;
-    font-size: 2.2rem; 
+    font-size: 2.2rem;
     text-align: right;
     border-radius: 10px;
-    word-wrap: break-word; 
-    overflow: hidden; 
+    word-wrap: break-word;
+    overflow: hidden;
 }
 
 /* --- Contenedor de Teclado y Salida --- */
 .keyboard-container {
     position: relative;
     width: 100%;
-    aspect-ratio: 1 / 1; /* Mantiene el contenedor cuadrado */
+    aspect-ratio: 1 / 1;
     background-color: var(--bg-keyboard);
     border-radius: 10px;
     box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
@@ -209,7 +196,7 @@ header .subtitle a:hover {
     display: grid;
     grid-template-columns: repeat(5, 1fr);
     grid-template-rows: repeat(5, 1fr);
-    gap: 2px; 
+    gap: 2px;
     width: 100%;
     height: 100%;
     transition: top 0.5s ease-in-out, opacity 0.3s ease-in-out;
@@ -218,49 +205,45 @@ header .subtitle a:hover {
 .keyboard--hidden {
     top: 100%;
     opacity: 0;
-    pointer-events: none; 
+    pointer-events: none;
 }
 
-/* Botones: Chakra Petch (digital, moderno) */
 .keyboard__button {
-    position: relative; 
+    position: relative;
     display: flex;
     justify-content: center;
     align-items: center;
     color: var(--btn-text-color);
     font-family: 'Chakra Petch', sans-serif;
-    font-size: 1.4rem; 
-    border: 2px solid #000; 
-    overflow: hidden; 
+    font-size: 1.4rem;
+    border: 2px solid #000;
+    overflow: hidden;
     transition: transform 0.1s ease, background-color 0.2s ease;
 }
 
-/* --- Variantes de Botones --- */
 .keyboard__button--number { background-color: var(--btn-num-bg); }
 .keyboard__button--operator { background-color: var(--btn-op-bg); }
-.keyboard__button--special { 
-    background-color: var(--btn-special-bg); 
-    font-size: 0.8em; 
+.keyboard__button--special {
+    background-color: var(--btn-special-bg);
+    font-size: 0.8em;
 }
 .keyboard__button--equals { background-color: var(--btn-equal-bg); }
 .keyboard__button--double-width { grid-column: span 2; }
 .keyboard__button--triple-width { grid-column: span 3; }
 
-/* --- Estado de Botones (Hover y Deshabilitado) --- */
 .keyboard__button:not(:disabled):hover {
     background: linear-gradient(90deg, #ff0000, #ff8000, #ffff00, #00ff00, #00ffff, #0000ff, #ff00ff);
     background-size: 200% 200%;
     animation: arcoiris 2s linear infinite;
-    transform: scale(1.05); 
+    transform: scale(1.05);
 }
 
-/* Regla única y consolidada para botones deshabilitados */
 .keyboard__button:disabled {
-    background-color: var(--btn-disabled-bg) !important; 
+    background-color: var(--btn-disabled-bg) !important;
     color: var(--btn-disabled-text);
     cursor: not-allowed;
-    animation: none !important; 
-    transform: none !important; 
+    animation: none !important;
+    transform: none !important;
 }
 
 /* --- Pantalla de Salida (Output Screen) --- */
@@ -270,21 +253,29 @@ header .subtitle a:hover {
     left: 0;
     z-index: 1;
     width: 100%;
-    height: calc(100% - var(--nav-height)); 
+    height: calc(100% - var(--nav-height));
     padding: 15px;
     background-color: var(--bg-output-screen);
     opacity: 0;
-    pointer-events: none; 
-    overflow: auto; 
+    pointer-events: none;
+    overflow: auto;
     transition: opacity 0.3s ease-in-out;
 }
 
 .output-screen--visible {
     opacity: 1;
-    pointer-events: all; 
+    pointer-events: all;
 }
 
-/* Celdas de salida: Quicksand (heredado de body) */
+.output-screen__error-message {
+    position: relative;
+    width: 90%;
+    margin: auto;
+    color: var(--color-error);
+    font-size: 1.2rem;
+    text-align: center;
+}
+
 .output-grid__cell {
     position: absolute;
     display: flex;
@@ -295,31 +286,22 @@ header .subtitle a:hover {
     position: absolute;
     background-color: var(--color-lineas-output);
 }
-.output-grid__cell--dividendo { color: #ff8c00; } 
-.output-grid__cell--divisor { color: #6495ed; }   
-.output-grid__cell--cociente { color: #00ff00; }  
-.output-grid__cell--producto { color: #ccc; }    
-.output-grid__cell--resto { color: #f08080; }     
-.output-grid__cell--suma-intermedia { 
-    color: #f0ad4e; 
+.output-grid__cell--dividendo { color: #ff8c00; }
+.output-grid__cell--divisor { color: #6495ed; }
+.output-grid__cell--cociente { color: #00ff00; }
+.output-grid__cell--producto { color: #ccc; }
+.output-grid__cell--resto { color: #f08080; }
+.output-grid__cell--suma-intermedia {
+    color: #f0ad4e;
     font-weight: bold;
     z-index: 10;
-    animation: fadeIn 0.3s ease-out; 
-}
-
-.output-screen__error-message {
-    position: relative;
-    width: 90%;
-    margin: auto; 
-    color: var(--color-error);
-    font-size: 1.2rem;
-    text-align: center;
+    animation: fadeIn 0.3s ease-out;
 }
 
 /* --- Navegación Inferior (Bottom Nav) --- */
 .bottom-nav {
     position: absolute;
-    bottom: -100%; 
+    bottom: -100%;
     left: 0;
     z-index: 3;
     display: flex;
@@ -336,13 +318,13 @@ header .subtitle a:hover {
 }
 
 .bottom-nav--visible {
-    bottom: 0; 
+    bottom: 0;
     opacity: 1;
     pointer-events: all;
 }
 
 .bottom-nav__button {
-    flex-grow: 1; 
+    flex-grow: 1;
     padding: 10px;
     background-color: rgba(255, 255, 255, 0.08);
     color: rgba(255, 255, 255, 0.8);
@@ -356,18 +338,19 @@ header .subtitle a:hover {
     color: white;
 }
 
-/* Botón de flecha: Outfit (limpio, funcional) */
 .bottom-nav__button--arrow {
     font-family: 'Outfit', sans-serif;
     font-size: 1.5rem;
 }
 
-/* --- Panel de Historial (History Panel) --- */
+/* --- 5. COMPONENTES FLOTANTES Y SUPERPUESTOS --- */
+
+/* --- Panel de Historial --- */
 .history-toggle-btn {
     position: fixed;
-    top: 20px; /* Vuelve a estar a 20px del borde superior del viewport */
-    right: 20px; /* Vuelve a estar a 20px del borde derecho del viewport */
-    z-index: 1002; 
+    top: 20px;
+    right: 20px;
+    z-index: 1002;
     display: flex;
     justify-content: center;
     align-items: center;
@@ -382,7 +365,7 @@ header .subtitle a:hover {
 }
 
 .history-toggle-btn:hover {
-    background-color: #4CAF50; 
+    background-color: #4CAF50;
     transform: scale(1.1);
 }
 
@@ -392,42 +375,40 @@ header .subtitle a:hover {
     fill: #eee;
 }
 
-/* Oculta el botón de historial cuando el panel está abierto */
 .history-panel.history-panel--open + .history-toggle-btn {
     opacity: 0;
     pointer-events: none;
 }
 
-/* Panel principal: Quicksand para todo el texto por herencia */
 .history-panel {
     position: fixed;
     top: 0;
-    right: -100%; 
+    right: -100%;
     z-index: 1000;
     display: flex;
     flex-direction: column;
-    width: 350px; 
-    max-width: 100vw; 
-    height: 100dvh; 
-    padding-top: env(safe-area-inset-top, 0px); /* Ya no depende de utility-bar-height */
+    width: 350px;
+    max-width: 100vw;
+    height: 100dvh;
+    padding-top: env(safe-area-inset-top, 0px);
     padding-bottom: env(safe-area-inset-bottom, 0px);
     background-color: var(--history-panel-bg);
     box-shadow: -5px 0 15px rgba(0, 0, 0, 0.5);
-    font-family: 'Quicksand', sans-serif; 
-    visibility: hidden; 
+    font-family: 'Quicksand', sans-serif;
+    visibility: hidden;
     transition: right 0.4s cubic-bezier(0.25, 1, 0.5, 1);
 }
 
 .history-panel--open {
-    right: 0; 
+    right: 0;
     visibility: visible;
 }
 
 .history-panel__header {
     display: flex;
-    justify-content: flex-start; 
+    justify-content: flex-start;
     align-items: center;
-    flex-shrink: 0; 
+    flex-shrink: 0;
     padding: 15px 20px;
     background-color: var(--history-header-bg);
     border-bottom: 1px solid var(--history-border-color);
@@ -440,14 +421,13 @@ header .subtitle a:hover {
     color: var(--history-text-color);
 }
 
-/* Botón Limpiar: Chakra Petch */
 .history-panel__clear-btn {
     flex-shrink: 0;
     margin-left: 20px;
     padding: 8px 15px;
     background-color: var(--history-clear-btn-bg);
     color: #fff;
-    font-family: 'Chakra Petch', sans-serif; 
+    font-family: 'Chakra Petch', sans-serif;
     font-size: 0.85em;
     text-transform: uppercase;
     letter-spacing: 0.5px;
@@ -463,12 +443,12 @@ header .subtitle a:hover {
 }
 
 .history-panel__list {
-    flex-grow: 1; 
+    flex-grow: 1;
     margin: 0;
     padding: 0 10px 10px;
     list-style: none;
     color: var(--history-text-color);
-    overflow-y: auto; 
+    overflow-y: auto;
 }
 
 .history-panel__item {
@@ -482,7 +462,7 @@ header .subtitle a:hover {
 }
 
 .history-panel__item:last-child {
-    border-bottom: none; 
+    border-bottom: none;
 }
 
 .history-panel__item:hover {
@@ -497,7 +477,7 @@ header .subtitle a:hover {
     font-size: 0.95em;
     line-height: 1.3;
     color: var(--history-input-color);
-    word-break: break-all; 
+    word-break: break-all;
 }
 
 .history-panel__result {
@@ -509,73 +489,81 @@ header .subtitle a:hover {
     word-break: break-all;
 }
 
-
-/* ======================================================= */
-/* --- ESTILOS PARA LA NUEVA BARRA LATERAL Y MODAL --- */
-/* ======================================================= */
-
+/* --- Barra Lateral de Utilidades --- */
 .sidebar-wrapper {
-    position: fixed; 
-    top: 20px; /* Vuelve a estar a 20px del borde superior del viewport */
-    left: 20px; /* Vuelve a estar a 20px del borde izquierdo del viewport */
+    position: fixed;
+    top: 20px;
+    left: 20px;
     z-index: 1050;
 }
 .bubble-main {
-    width: 65px; height: 65px;
+    width: 65px;
+    height: 65px;
     transition: transform 0.3s ease-in-out;
 }
 .bubble-main[aria-expanded="true"] {
-    transform: rotate(45deg); 
+    transform: rotate(45deg);
 }
 .bubble-btn {
-    width: 55px; height: 55px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
-    padding: 0; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2); transition: all 0.2s ease;
-    background-color: var(--nav-bg); 
-    color: #eee; 
+    width: 55px;
+    height: 55px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    transition: all 0.2s ease;
+    background-color: var(--nav-bg);
+    color: #eee;
 }
 .bubble-btn:hover {
-    transform: scale(1.1); box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
+    transform: scale(1.1);
+    box-shadow: 0 6px 16px rgba(0, 0, 0, 0.3);
 }
 .bubble-sub {
-    width: 45px; height: 45px;
+    width: 45px;
+    height: 45px;
 }
 .bubble-sub i {
     font-size: 1.2rem;
 }
 
-/* ESTILOS PARA EL LECTOR DE NÚMEROS (DENTRO DEL MODAL) */
+/* --- Modal y Lector de Números --- */
+#infoModalLabel {
+    color: #040101;
+    text-align: center;
+    width: 100%;
+}
+
 .modal-body .input-section { margin-bottom: 2rem; text-align: center; }
-.modal-body .input-section label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 1.1rem; color: var(--ln-color-texto-principal); } 
+.modal-body .input-section label { display: block; margin-bottom: 0.5rem; font-weight: 500; font-size: 1.1rem; color: var(--ln-color-texto-principal); }
 .modal-body .input-section input {
     font-family: 'Roboto Mono', monospace; padding: 0.75rem; border: 1px solid #ccc;
     border-radius: 8px; font-size: 1.5rem; width: 100%; max-width: 400px; text-align: center;
-    color: var(--ln-color-texto-principal); 
+    color: var(--ln-color-texto-principal);
 }
-
 .modal-body .card {
     background: #ffffff; padding: 1.5rem; border-radius: 12px; border: 1px solid #e0e0e0;
-    margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); color: #000; 
+    margin-bottom: 1.5rem; box-shadow: 0 4px 6px rgba(0,0,0,0.05); color: #000;
 }
 .modal-body .card h2 {
     margin-top: 0; margin-bottom: 1rem; font-size: 1.25rem;
     color: var(--ln-color-texto-principal); border-bottom: 1px solid #eee; padding-bottom: 0.75rem;
 }
-
 .modal-body .result-box {
     padding: 1rem; border-radius: 8px; min-height: 50px; display: flex; align-items: center;
     justify-content: center; background-color: var(--ln-color-fondo); font-size: 1.2rem;
     font-family: 'Roboto', sans-serif; transition: background-color 0.3s;
 }
 .modal-body .placeholder-text { color: var(--ln-color-placeholder); font-style: italic; }
-
 .modal-body .phonetic-box {
     font-family: 'Roboto Mono', monospace; font-weight: 700; letter-spacing: 1px;
-    word-spacing: 10px; display: flex; flex-wrap: wrap; 
+    word-spacing: 10px; display: flex; flex-wrap: wrap;
 }
 .modal-body .phonetic-box .palabra-fonetica {
     padding: 2px 5px; transition: background-color 0.2s, color 0.2s; border-radius: 4px;
 }
-
 .modal-body .svg-box { padding: 0; background-color: transparent; overflow-x: auto; }
 .modal-body .svg-box svg { display: block; width: 100%; max-height: 250px; }
 .modal-body .svg-etiqueta-principal {
@@ -587,12 +575,10 @@ header .subtitle a:hover {
     text-transform: uppercase; fill: var(--ln-color-decimal);
 }
 .modal-body .svg-numero { font-family: 'Roboto Mono', monospace; font-size: 5rem; font-weight: 700; }
-
 .modal-body .highlight {
     background-color: var(--ln-color-entero) !important; color: white !important;
     fill: white !important; transition: background-color 0.1s, color 0.1s;
 }
-
 .modal-body .play-btn {
     margin-top: 1rem; padding: 0.5rem 1rem; font-size: 1rem; border-radius: 20px;
     border: 1px solid #ccc; background: #fff; cursor: pointer; color: #333;
@@ -600,15 +586,14 @@ header .subtitle a:hover {
 }
 .modal-body .play-btn:hover { background-color: #f0f0f0; transform: translateY(-2px); }
 
-
-/* --- Footer principal --- */
+/* --- 6. FOOTER --- */
 .main-footer {
-    margin-top: 30px; /* Espacio entre la calculadora y el footer */
+    margin-top: 30px;
+    padding-bottom: 20px;
     text-align: center;
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.6);
-    padding-bottom: 20px; /* Espacio extra al final */
-    flex-shrink: 0; /* Evita que el footer se encoja si el espacio es limitado */
+    flex-shrink: 0;
 }
 
 .main-footer a {
@@ -622,17 +607,9 @@ header .subtitle a:hover {
     text-decoration: underline;
 }
 
-
-/* ======================================================= */
-/* --- ANIMACIONES GLOBALES (@keyframes) --- */
-/* ======================================================= */
-
-/* Animación de entrada para elementos */
+/* --- 7. ANIMACIONES GLOBALES --- */
 @keyframes fadeInScale-animation {
-    to {
-        opacity: 1;
-        transform: scale(1);
-    }
+    to { opacity: 1; transform: scale(1); }
 }
 .animate-fade-in-scale {
     opacity: 0;
@@ -640,14 +617,12 @@ header .subtitle a:hover {
     animation: fadeInScale-animation 0.5s forwards cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Animación de hover para botones */
 @keyframes arcoiris {
     0% { background-position: 0% 50% }
     50% { background-position: 100% 50% }
     100% { background-position: 0% 50% }
 }
 
-/* Animación de pulso consolidada (para resta, suma, etc.) */
 @keyframes pulse {
     0%, 100% { transform: scale(1); opacity: 1; }
     50% { transform: scale(1.2); opacity: 0.8; }
@@ -656,165 +631,108 @@ header .subtitle a:hover {
     animation: pulse 0.5s ease-in-out;
 }
 
-/* Animación de entrada para celdas de suma */
 @keyframes fadeIn {
     from { transform: scale(0.8); opacity: 0; }
     to { transform: scale(1); opacity: 1; }
 }
 
-/* Animación de resaltado para ítems del historial */
 @keyframes history-item-highlight {
-    0% {
-        background-color: transparent;
-        transform: scale(1);
-    }
-    50% {
-        background-color: rgba(76, 175, 80, 0.4); 
-        transform: scale(1.02);
-    }
-    100% {
-        background-color: transparent;
-        transform: scale(1);
-    }
+    0% { background-color: transparent; transform: scale(1); }
+    50% { background-color: rgba(76, 175, 80, 0.4); transform: scale(1.02); }
+    100% { background-color: transparent; transform: scale(1); }
 }
 
-
 /* ======================================================= */
-/* --- MEDIA QUERIES PARA VISTAS MÓVILES (PANTALLA COMPLETA) --- */
+/* --- 8. MEDIA QUERIES PARA VISTAS MÓVILES --- */
 /* ======================================================= */
 
 @media (max-width: 600px) {
 
-    /* === Reset y base === */
-    html {
-        box-sizing: border-box;
+    /* --- Variables específicas para móvil --- */
+    :root {
+        --floating-btn-size-mobile: 60px;
+        --floating-btn-margin-mobile: 10px;
     }
-    *, *:before, *:after {
-        box-sizing: inherit;
-    }
+
+    /* --- Reset y base para móvil --- */
+    html { box-sizing: border-box; }
+    *, *:before, *:after { box-sizing: inherit; }
 
     body {
         margin: 0;
-        /* Padding específico para móvil que respeta las áreas seguras */
-        padding-top: env(safe-area-inset-top, 10px); 
-        padding-right: env(safe-area-inset-right, 10px);
-        padding-bottom: env(safe-area-inset-bottom, 20px);
-        padding-left: env(safe-area-inset-left, 10px);
-
-        overflow-y: auto; /* Permite scroll vertical en móvil si es necesario */
-        overflow-x: hidden; 
+        padding: env(safe-area-inset-top, 10px) env(safe-area-inset-right, 10px) env(safe-area-inset-bottom, 20px) env(safe-area-inset-left, 10px);
+        overflow-y: auto;
+        overflow-x: hidden;
     }
 
-    /* main-content-wrapper en móvil */
-    .main-content-wrapper {
-        padding-top: 0; /* No necesita padding superior adicional */
-    }
+    .main-content-wrapper { padding-top: 0; }
 
-    /* === Contenedor principal === */
-    .calculator-container { 
+    /* --- Layout de la calculadora en móvil --- */
+    .calculator-container {
         width: 100% !important;
-        max-width: none !important; 
-        margin-bottom: 0; 
-        flex-grow: 1; 
+        max-width: none !important;
+        margin-bottom: 0;
+        flex-grow: 1;
     }
-
-    /* === Pantalla y teclado === */
-    .keyboard-container { 
-        width: 100% !important; 
+    .keyboard-container {
+        width: 100% !important;
         height: auto !important;
-        flex-grow: 1; 
+        flex-grow: 1;
     }
+    .keyboard { height: 100%; }
 
-    .keyboard { 
-        height: 100%;
-    }
-
-    .display { 
+    /* --- Componentes en móvil --- */
+    .display {
         font-size: 10vw !important;
         padding: 15px;
         flex-shrink: 0;
     }
+    .output-screen { font-size: 5vw !important; }
+    .keyboard__button { font-size: 6vw; }
+    .bottom-nav__button--arrow { font-size: 7vw !important; }
+    #botexp, #botnor { font-size: 3.5vw !important; padding: 8px; }
 
-    .output-screen { 
-        font-size: 5vw !important;
+    /* --- Encabezado en móvil --- */
+    header { flex-shrink: 0; }
+    header h1 { font-size: 12vw !important; letter-spacing: 1px !important; }
+    header .subtitle { font-size: 3.5vw !important; }
+    .output-screen__error-message { font-size: 4.5vw !important; padding-top: 25%; }
+
+    /* --- Componentes flotantes y Header del Historial en móvil --- */
+    .history-toggle-btn,
+    .sidebar-wrapper {
+        top: calc(env(safe-area-inset-top, 10px) + var(--floating-btn-margin-mobile));
     }
 
-    /* === Botones === */
-    .keyboard__button { 
-        font-size: 6vw;
-    }
+    .history-toggle-btn { right: var(--floating-btn-margin-mobile); }
+    .sidebar-wrapper { left: var(--floating-btn-margin-mobile); }
 
-    .bottom-nav__button--arrow { 
-        font-size: 7vw !important;
-    }
-
-    /* NOTA: Los IDs #botexp y #botnor no estaban definidos en el CSS principal de la calculadora.
-       Si existen en tu HTML, asegúrate de que sean relevantes o transfiérelos a clases.
-       Por ahora, se mantienen como estaban. */
-    #botexp, #botnor { 
-        font-size: 3.5vw !important;
-        padding: 8px;
-    }
-
-    /* === Encabezado === */
-    header {
-        flex-shrink: 0;
-    }
-    
-    header h1 {
-        font-size: 12vw !important; /* Mantiene la adaptación de tamaño para móvil */
-        letter-spacing: 1px !important;
-    }
-
-    header .subtitle {
-        font-size: 3.5vw !important; /* Mantiene la adaptación de tamaño para móvil */
-    }
-
-    /* === Mensajes de error === */
-    .output-screen__error-message { 
-        font-size: 4.5vw !important;
-        padding-top: 25%;
-    }
-
-    /* Ajuste para los botones flotantes en móvil (se reposicionan si no hay barra de utilidad) */
-    .history-toggle-btn {
-        top: calc(env(safe-area-inset-top, 10px) + 10px); /* Posición desde el top del viewport + margen */
-        right: 10px; 
-        width: 60px; /* Más pequeños en móvil */
-        height: 60px;
+    .history-toggle-btn,
+    .sidebar-wrapper .bubble-main {
+        width: var(--floating-btn-size-mobile);
+        height: var(--floating-btn-size-mobile);
     }
     .history-toggle-btn svg {
-        width: 20px;
-        height: 20px;
-    }
-
-    .sidebar-wrapper {
-        top: calc(env(safe-area-inset-top, 10px) + 10px); /* Posición desde el top del viewport + margen */
-        left: 10px; 
-    }
-    .bubble-main {
-        width: 45px; 
-        height: 45px;
+        width: 50%; /* Proporcional al botón */
+        height: 50%;
     }
     .bubble-btn {
-        width: 60px; 
-        height: 60px;
+        width: 52px;
+        height: 52px;
     }
     .bubble-sub {
-        width: 50px; 
-        height: 50px;
+        width: 45px;
+        height: 45px;
     }
 
-     /* --- Ocultar el Footer en móvil --- */
+    .history-panel__header {
+        padding-left: calc(var(--floating-btn-size-mobile) + var(--floating-btn-margin-mobile) + 10px);
+        padding-right: calc(var(--floating-btn-size-mobile) + var(--floating-btn-margin-mobile) + 10px);
+        justify-content: flex-start;
+    }
+
+    /* --- Ocultar Footer en móvil --- */
     .main-footer {
-        display: none; /* <-- ESTA LÍNEA LO OCULTA EN MÓVILES */
+        display: none;
     }
-}
-
-
-#infoModalLabel {
-  color: #040101;
-  text-align: center;
-  width: 100%;
-  left: 0;
 }
