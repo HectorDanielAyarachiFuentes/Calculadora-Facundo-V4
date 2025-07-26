@@ -1,14 +1,10 @@
 // =======================================================
-// --- history.js (VERSIÓN FINAL Y CORREGIDA) ---
+// --- history.js (VERSIÓN COMPLETA Y CORREGIDA) ---
 // Gestiona el historial de operaciones, incluyendo persistencia y renderizado.
 // =======================================================
 "use strict";
 
-import { display, salida } from './config.js'; 
-import { crearMensajeError } from './operations/utils/dom-helpers.js'; 
-// *** Importación clave: Asegúrate de que esta ruta sea correcta para tu main.js ***
-import { reExecuteOperationFromHistory } from './main.js'; 
-
+import { reExecuteOperationFromHistory } from './main.js';
 
 class HistoryManagerClass {
     constructor() {
@@ -22,8 +18,8 @@ class HistoryManagerClass {
         HistoryPanel.renderHistory();
     }
 
-    // *** MODIFICACIÓN: Este método debe ser asíncrono para usar 'await' ***
     async add(item) {
+        // Evita añadir duplicados consecutivos
         const duplicateIndex = this.history.findIndex(existingItem => existingItem.input === item.input);
         if (duplicateIndex !== -1) {
             alert('¡Oye! Ya has realizado esta operación antes. ¡Mira el historial!');
@@ -31,16 +27,13 @@ class HistoryManagerClass {
                 HistoryPanel.open();
             }
             HistoryPanel.highlightItem(duplicateIndex);
-            
-            // *** CAMBIO: Re-ejecutar la operación duplicada usando la función de main.js ***
             await reExecuteOperationFromHistory(this.history[duplicateIndex].input);
-            // *****************************************************************************
-            return; // Detener para no añadir duplicado
+            return;
         }
-        
-        // La lógica para extraer el resultado debería ser robusta si main.js pasa visualHtml
-        // Simplificamos la condición ya que 'item.result' puede venir vacío y se extrae.
-        if (!item.result) { 
+
+        // Si el resultado no viene pre-calculado, lo extraemos del HTML visual.
+        // Esta es la parte crítica que ahora funcionará correctamente.
+        if (!item.result) {
             item.result = HistoryPanel.extractResultText(item.visualHtml);
         }
 
@@ -50,22 +43,25 @@ class HistoryManagerClass {
         }
         this.saveHistory();
         HistoryPanel.renderHistory();
-
-        // Resaltar el último elemento (el nuevo está en la posición 0)
         HistoryPanel.highlightLastItem();
     }
 
     getHistory() { return this.history; }
+
     clearAll() {
         this.history = [];
         this.saveHistory();
         HistoryPanel.renderHistory();
     }
+
     loadHistory() {
         const storedHistory = localStorage.getItem(this.HISTORY_STORAGE_KEY);
         this.history = storedHistory ? JSON.parse(storedHistory) : [];
     }
-    saveHistory() { localStorage.setItem(this.HISTORY_STORAGE_KEY, JSON.stringify(this.history)); }
+
+    saveHistory() {
+        localStorage.setItem(this.HISTORY_STORAGE_KEY, JSON.stringify(this.history));
+    }
 }
 
 class HistoryPanelClass {
@@ -86,7 +82,7 @@ class HistoryPanelClass {
     addEventListeners() {
         if (this.toggleButton) {
             this.toggleButton.addEventListener('click', (e) => {
-                e.stopPropagation(); 
+                e.stopPropagation();
                 this.toggle();
             });
         }
@@ -96,16 +92,13 @@ class HistoryPanelClass {
     }
 
     confirmAndClear() {
-        const isConfirmed = window.confirm(
-            '¿Estás seguro de que quieres borrar todo el historial?\n\nEsta acción no se puede deshacer.'
-        );
-
-        if (isConfirmed) {
+        if (window.confirm('¿Estás seguro de que quieres borrar todo el historial?\n\nEsta acción no se puede deshacer.')) {
             HistoryManager.clearAll();
         }
     }
 
     renderHistory() {
+        if (!this.list) return;
         this.list.innerHTML = '';
         HistoryManager.getHistory().forEach((item, index) => {
             const li = document.createElement('li');
@@ -115,41 +108,70 @@ class HistoryPanelClass {
                 <span class="history-panel__input">${item.input}</span>
                 <span class="history-panel__result">= ${item.result}</span>
             `;
-            // *** MODIFICACIÓN: Hacer el callback asíncrono y usar la función de main.js ***
-            li.addEventListener('click', async () => { // <--- Añadido 'async' aquí
-                await reExecuteOperationFromHistory(item.input); // <--- Nueva llamada con 'await'
-                // Ya no necesitamos salida.innerHTML = item.visualHtml; ni display.innerHTML = item.input;
-                // reExecuteOperationFromHistory se encarga de eso.
-                // ********************************************************************************
+            li.addEventListener('click', async () => {
+                await reExecuteOperationFromHistory(item.input);
                 this.close();
             });
             this.list.appendChild(li);
         });
     }
 
+    // *** ¡FUNCIÓN CLAVE COMPLETAMENTE REESCRITA Y ROBUSTA! ***
+    // Extrae el texto del resultado de forma inteligente, basándose en la posición de las celdas.
     extractResultText(htmlString) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlString;
-        const cocienteElements = tempDiv.querySelectorAll('.output-grid__cell--cociente');
-        if (cocienteElements.length > 0) {
-            return Array.from(cocienteElements).map(el => el.textContent).join('');
+
+        // 1. Seleccionamos todas las celdas que pueden formar parte de un resultado
+        //    (números, comas, y el signo negativo).
+        const candidateCells = tempDiv.querySelectorAll('.output-grid__cell--cociente, .output-grid__cell--producto');
+
+        // 2. Si no hay celdas de resultado, buscamos un mensaje de error o resto.
+        if (candidateCells.length === 0) {
+            const error = tempDiv.querySelector('.output-screen__error-message');
+            if (error) return error.textContent.trim();
+            const resto = tempDiv.querySelector('.output-grid__cell--resto');
+            if (resto) return `Resto: ${resto.textContent.trim()}`;
+            return 'Resultado no disponible'; // Fallback final
         }
-        const resto = tempDiv.querySelector('.output-grid__cell--resto'); 
-        if (resto) {
-            return `Resto: ${resto.textContent}`;
-        }
-        const error = tempDiv.querySelector('.output-screen__error-message');
-        if (error) return error.textContent;
-        return tempDiv.textContent.trim().split('\n')[0] || 'Resultado';
+
+        // 3. Agrupamos las celdas por su línea vertical (posición 'top').
+        const lines = new Map();
+        candidateCells.forEach(cell => {
+            // Redondeamos el 'top' para agrupar celdas que están en la misma línea
+            // aunque tengan diferencias de subpíxeles. Usamos '|| 0' como seguridad.
+            const top = Math.round(parseFloat(cell.style.top) || 0);
+            
+            if (!lines.has(top)) {
+                lines.set(top, []);
+            }
+            lines.get(top).push(cell);
+        });
+
+        if (lines.size === 0) return "Error al procesar resultado";
+
+        // 4. Identificamos la línea del resultado final (la que está más abajo).
+        const lowestLineY = Math.max(...lines.keys());
+        const resultLineCells = lines.get(lowestLineY);
+
+        // 5. Ordenamos las celdas de esa línea de izquierda a derecha.
+        resultLineCells.sort((a, b) => {
+            const leftA = parseFloat(a.style.left) || 0;
+            const leftB = parseFloat(b.style.left) || 0;
+            return leftA - leftB;
+        });
+
+        // 6. Unimos el texto para formar el resultado final y correcto.
+        return resultLineCells.map(cell => cell.textContent).join('');
     }
-    
-    // --- Lógica para cerrar el panel al hacer clic fuera (sin cambios) ---
+
+    // --- Lógica del panel (sin cambios) ---
     handleOutsideClick(event) {
         if (this.isOpen() && !this.panel.contains(event.target) && !this.toggleButton.contains(event.target)) {
             this.close();
         }
     }
-    
+
     isOpen() {
         return this.panel.classList.contains('history-panel--open');
     }
@@ -165,11 +187,11 @@ class HistoryPanelClass {
         this.panel.classList.remove('history-panel--open');
         document.removeEventListener('click', this.handleOutsideClick);
     }
-    
+
     toggle() {
         this.isOpen() ? this.close() : this.open();
     }
-    
+
     highlightItem(index) {
         const itemToHighlight = this.list.querySelector(`.history-panel__item[data-index="${index}"]`);
         if (itemToHighlight) {

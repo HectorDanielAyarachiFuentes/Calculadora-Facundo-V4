@@ -79,7 +79,7 @@ function handleKeyboardInput(event) {
     // ======================================================
     // === INICIO DE LA CORRECCIÓN CLAVE PARA EL MODAL ===
     // ======================================================
-    // Si el evento se originó en un <input> o <textarea>,
+    // Si el evento se originó en un <input> o <textarea> (como el del prompt de confirmación),
     // permitimos que el navegador maneje la entrada de texto de forma nativa
     // y no ejecutamos la lógica de la calculadora.
     if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
@@ -106,8 +106,9 @@ function handleKeyboardInput(event) {
     else if (key === 'Delete' || key === 'Escape') escribir('c');
 }
 
-// *** ¡CORRECCIÓN PRINCIPAL AQUÍ: reExecuteOperationFromHistory! ***
-// Esta función es llamada desde history.js para re-ejecutar cualquier tipo de operación.
+// *** ¡NUEVA FUNCIÓN CENTRALIZADA Y ROBUSTA! ***
+// Esta función es llamada desde history.js y ahora también desde handleAction
+// para ejecutar CUALQUIER tipo de operación de forma consistente.
 export async function reExecuteOperationFromHistory(historyInput) {
     bajarteclado();                   // 1. Muestra la pantalla de salida y oculta el teclado
     salida.innerHTML = "";            // 2. Limpia la salida para la nueva operación
@@ -116,51 +117,46 @@ export async function reExecuteOperationFromHistory(historyInput) {
     
     // Patrones para identificar el tipo de operación
     const primosMatch = historyInput.match(/^factores\((\d+)\)$/);
-    const raizMatch = historyInput.match(/^√\((\d+)\)$/);
+    const raizMatch = historyInput.match(/^√\((.+)\)$/); // Acepta decimales
     
-    // Guardamos el contenido original de display si es necesario para reestablecerlo
-    const originalDisplayContent = display.innerHTML;
-
     try {
         if (primosMatch) {
-            const numero = primosMatch[1]; // Extrae solo el número "145"
-            display.innerHTML = numero; // *** TEMPORALMENTE: Pon solo el número en el display ***
-            await desFacPri(numero); // Llama a la función de factores primos
+            const numero = primosMatch[1]; // Extrae solo el número, ej: "145"
+            display.innerHTML = numero; // La función de factores espera solo el número en el display
+            await desFacPri(numero);
             calculationSuccessful = !salida.querySelector('.output-screen__error-message');
         } else if (raizMatch) {
-            const numero = raizMatch[1]; // Extrae solo el número "144"
-            display.innerHTML = numero; // *** TEMPORALMENTE: Pon solo el número en el display ***
-            await raizCuadrada(numero); // Llama a la función de raíz cuadrada
+            const numero = raizMatch[1]; // Extrae el número, ej: "144" o "12.5"
+            display.innerHTML = numero; // La función de raíz espera solo el número en el display
+            await raizCuadrada(numero);
             calculationSuccessful = !salida.querySelector('.output-screen__error-message');
         } else {
             // Para operaciones binarias, el display debe contener la expresión completa
-            display.innerHTML = historyInput; // Establece la expresión completa (ej. "652/69")
-            await calcular(false); // Llama a calcular, diciéndole que NO añada al historial
+            display.innerHTML = historyInput; // Establece la expresión completa (ej. "9+9,3")
+            await calcular(false); // Llama a calcular, indicándole que NO añada al historial
             calculationSuccessful = !salida.querySelector('.output-screen__error-message');
         }
     } catch (error) {
-        console.error("Error durante la re-ejecución desde el historial:", error);
+        console.error("Error durante la re-ejecución:", error);
         salida.appendChild(crearMensajeError(errorMessages.genericError));
         calculationSuccessful = false;
     } finally {
-        // *** CRUCIAL: Vuelve a poner el formato original del historial en el display ***
-        // Esto es para que el display muestre "factores(145)" o "√(144)" o "652/69"
+        // *** CRUCIAL: Restaura el formato original en el display para consistencia visual ***
         display.innerHTML = historyInput; 
-        activadoBotones(display.innerHTML); // 4. Actualiza el estado de los botones
+        activadoBotones(display.innerHTML); // Actualiza el estado de los botones
     }
 
     return calculationSuccessful; // Retorna si la re-ejecución fue exitosa
 }
 
 
-// --- handleAction: Refactorizado para usar la función unificada ---
+// --- handleAction: Refactorizado para usar la función centralizada ---
 async function handleAction(action) {
     switch (action) {
         case 'view-screen':
             bajarteclado();
             break;
         case 'calculate':
-            // Pasar 'true' para indicar que es un cálculo nuevo y se añada al historial
             await calcular(true); 
             break;
         case 'clear':
@@ -173,62 +169,49 @@ async function handleAction(action) {
             subirteclado();
             break;
         case 'divide-expanded':
-            divext = true; // Establece el modo a expandido
-            // Re-ejecuta la última división si existe
-            if (lastDivisionState.tipo === 'division' && lastDivisionState.operacionInput) {
-                // Llama a reExecuteOperationFromHistory con la última operación de división
-                await reExecuteOperationFromHistory(lastDivisionState.operacionInput);
-            } else {
-                actualizarEstadoDivisionUI(false); // Si no hay división previa, ocultar los botones
-            }
-            break;
         case 'divide-normal':
-            divext = false; // Establece el modo a normal
-            // Re-ejecuta la última división si existe
-            if (lastDivisionState.tipo === 'division' && lastDivisionState.operacionInput) {
-                // Llama a reExecuteOperationFromHistory con la última operación de división
+            divext = (action === 'divide-expanded');
+            if (lastDivisionState.operacionInput) {
                 await reExecuteOperationFromHistory(lastDivisionState.operacionInput);
             } else {
-                actualizarEstadoDivisionUI(false); // Si no hay división previa, ocultar los botones
+                actualizarEstadoDivisionUI(false);
             }
             break;
 
-        // --- CÓDIGO PARA FACTORES PRIMOS (modificado para usar reExecuteOperationFromHistory) ---
-        case 'primos':
-            const numeroPrimos = display.innerHTML; // Obtiene el número del display
-            const inputParaHistorialPrimos = `factores(${numeroPrimos})`; // Crea el formato para el historial
-            // Usa reExecuteOperationFromHistory para ejecutar y actualizar la UI
-            const primosSuccess = await reExecuteOperationFromHistory(inputParaHistorialPrimos); 
-            if (primosSuccess) {
-                // Solo añade al historial si la operación fue exitosa
+        // --- CÓDIGO PARA FACTORES PRIMOS (AHORA USA LA LÓGICA CENTRALIZADA) ---
+        case 'primos': {
+            const numero = display.innerHTML;
+            const inputParaHistorial = `factores(${numero})`;
+            const success = await reExecuteOperationFromHistory(inputParaHistorial); 
+            if (success) {
                 HistoryManager.add({
-                    input: inputParaHistorialPrimos,
+                    input: inputParaHistorial,
                     visualHtml: salida.innerHTML
                 });
             }
             break;
+        }
 
-        // --- CÓDIGO PARA RAÍZ CUADRADA (modificado para usar reExecuteOperationFromHistory) ---
-        case 'raiz':
-            const numeroRaiz = display.innerHTML; // Obtiene el número del display
-            const inputParaHistorialRaiz = `√(${numeroRaiz})`; // Crea el formato para el historial
-            // Usa reExecuteOperationFromHistory para ejecutar y actualizar la UI
-            const raizSuccess = await reExecuteOperationFromHistory(inputParaHistorialRaiz); 
-            if (raizSuccess) {
-                // Solo añade al historial si la operación fue exitosa
+        // --- CÓDIGO PARA RAÍZ CUADRADA (AHORA USA LA LÓGICA CENTRALIZADA) ---
+        case 'raiz': {
+            const numero = display.innerHTML;
+            const inputParaHistorial = `√(${numero})`;
+            const success = await reExecuteOperationFromHistory(inputParaHistorial); 
+            if (success) {
                 HistoryManager.add({
-                    input: inputParaHistorialRaiz,
+                    input: inputParaHistorial,
                     visualHtml: salida.innerHTML
                 });
             }
             break;
+        }
 
         default:
             console.warn(`Acción desconocida: ${action}`);
     }
 }
 
-// --- LÓGICA DE LA APLICACIÓN (sin cambios) ---
+// --- LÓGICA DE LA APLICACIÓN (con pequeña modificación en calcular) ---
 function escribir(t) {
     const currentDisplay = display.innerHTML;
     const isOperator = ['+', '-', 'x', '/'].includes(t);
@@ -272,10 +255,10 @@ function escribir(t) {
 
 // *** MODIFICACIÓN: calcular ahora acepta un parámetro para controlar si añade al historial ***
 async function calcular(addToHistory = true) { // Añade el parámetro con valor por defecto 'true'
-    const entrada = display.innerHTML; // 'display.innerHTML' ya contendrá la expresión correcta
-    const operadorMatch = entrada.match(/[\+\-x/]/);
+    const entrada = display.innerHTML;
+    const operadorMatch = entrada.match(/[+\-x/]/);
 
-    if (!operadorMatch || !/^-?[0-9,]+\s*[+\-x/]\s*(-?[0-9,]+)?$/.test(entrada) || ['+', '-', 'x', '/'].includes(entrada.slice(-1)) || entrada.endsWith(',')) { 
+    if (!operadorMatch || !/^-?[0-9,]+\s*[+\-x/]\s*-?[0-9,]+$/.test(entrada) || ['+', '-', 'x', '/'].includes(entrada.slice(-1)) || entrada.endsWith(',')) { 
         salida.innerHTML = '';
         salida.appendChild(crearMensajeError(errorMessages.invalidOperation));
         bajarteclado();
@@ -291,22 +274,18 @@ async function calcular(addToHistory = true) { // Añade el parámetro con valor
 
     switch (operador) {
         case "+": await suma(numerosAR); break;
-        case "-": resta(numerosAR); break;
-        case "x": multiplica(numerosAR); break;
+        case "-": await resta(numerosAR); break;
+        case "x": await multiplica(numerosAR); break;
         case "/":
             lastDivisionState = { operacionInput: entrada, numerosAR, tipo: 'division' };
-            divext ? divideExt(numerosAR) : divide(numerosAR);
+            divext ? await divideExt(numerosAR) : await divide(numerosAR);
             break;
         default:
             salida.appendChild(crearMensajeError(errorMessages.invalidOperation));
     }
     
     const calculationError = salida.querySelector('.output-screen__error-message');
-    if (operador === '/' && !calculationError) {
-        actualizarEstadoDivisionUI(true);
-    } else {
-        actualizarEstadoDivisionUI(false);
-    }
+    actualizarEstadoDivisionUI(operador === '/' && !calculationError);
 
     // *** MODIFICACIÓN: Solo añade al historial si 'addToHistory' es true ***
     if (addToHistory && !calculationError) {
@@ -315,21 +294,7 @@ async function calcular(addToHistory = true) { // Añade el parámetro con valor
     activadoBotones(display.innerHTML);
 }
 
-// --- El resto del archivo sin cambios ---
-function divideExpandida(esExpandida) {
-    divext = esExpandida;
-    actualizarEstadoDivisionUI(true); 
-    bajarteclado(); 
-
-    requestAnimationFrame(async () => { 
-        if (!lastDivisionState.operacionInput || lastDivisionState.tipo !== 'division') { 
-            salida.appendChild(crearMensajeError(errorMessages.noDivisionCalculated));
-            return;
-        }
-        await reExecuteOperationFromHistory(lastDivisionState.operacionInput);
-    });
-}
-
+// --- El resto del archivo sin cambios significativos en la lógica ---
 function subirteclado() {
     teclado.classList.remove('keyboard--hidden');
     salida.classList.remove('output-screen--visible');
@@ -359,7 +324,7 @@ function activadoBotones(contDisplay) {
     const esSoloCero = contDisplay === '0';
     const hasBinaryOperatorInExpression = /[+\-x/]/.test(contDisplay.slice(contDisplay.startsWith('-') ? 1 : 0).replace(/^[0-9,]+/, ''));
     
-    const partes = contDisplay.split(/[\+\-x/]/);
+    const partes = contDisplay.split(/[+\-x/]/);
     const ultimoNumero = partes[partes.length - 1];
     const terminaEnOperador = ['+', '-', 'x', '/'].includes(contDisplay.slice(-1));
 
@@ -395,7 +360,7 @@ function activadoBotones(contDisplay) {
         btn.disabled = !esNumeroEnteroSimple;
     });
 
-    const esCalculable = /^-?[0-9,]+\s*[+\-x/]\s*(-?[0-9,]+)$/.test(contDisplay);
+    const esCalculable = /^-?[0-9,]+\s*[+\-x/]\s*-?[0-9,]+$/.test(contDisplay);
     const btnIgual = document.querySelector('[data-action="calculate"]');
     if (btnIgual) btnIgual.disabled = !esCalculable;
 }
@@ -403,7 +368,7 @@ function activadoBotones(contDisplay) {
 document.addEventListener('DOMContentLoaded', alCargar);
 
 
-// Velocidad de title y cambio al pasar de pestaña (sin cambios)
+// --- Código de animación del título (sin cambios) ---
 let baseTitle = "Calculadora Facundo 🧮";
 let altTitle = "¡Regresa! 😢 🧮 ";
 let scrollTitle = altTitle + " ";
