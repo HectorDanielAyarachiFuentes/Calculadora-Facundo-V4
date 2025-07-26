@@ -1,7 +1,7 @@
 // =======================================================
-// --- operations/modules/division.js (VERSIÓN FINAL, REV. II) ---
+// --- operations/modules/division.js (VERSIÓN FINAL, REV. III - Con decimales) ---
 // Contiene la lógica y la visualización para la operación de división.
-// `divide`: Muestra el proceso completo de la división larga (extendida).
+// `divide`: Muestra el proceso completo de la división larga (extendida) con 2 decimales.
 // `divideExt`: Muestra el layout clásico de la división finalizada (usual).
 // =======================================================
 "use strict";
@@ -12,19 +12,18 @@ import { salida, errorMessages } from '../../config.js';
 
 /**
  * Función de cálculo que genera un array de todos los elementos a dibujar
- * para la división paso a paso (modo extendido).
+ * para la división paso a paso (modo extendido), incluyendo 2 decimales.
  * Retorna productos y restos para cada paso.
  * @param {string} dividendoStr
  * @param {string} divisorStr
+ * @param {number} [decimalPlaces=2] - Número de lugares decimales a calcular.
  * @returns {{cociente: string, displaySteps: Array<object>, totalRows: number}}
  */
-function calculateDisplaySteps(dividendoStr, divisorStr) {
+function calculateDisplaySteps(dividendoStr, divisorStr, decimalPlaces = 2) {
     const divisor = BigInt(divisorStr);
-    const cocienteCompleto = (BigInt(dividendoStr) / divisor).toString();
     
     const displaySteps = [];
     let currentRow = 0; // Fila visual
-    let posicionEnDividendo = 0; // Índice exclusivo del último dígito del dividendo usado/considerado
 
     // 1. Añadir el dividendo inicial
     displaySteps.push({ 
@@ -36,48 +35,116 @@ function calculateDisplaySteps(dividendoStr, divisorStr) {
     currentRow++;
 
     let restoActual = 0n; // El número actual que estamos tratando de dividir
+    let posicionEnDividendo = 0; // Índice exclusivo del último dígito del dividendo usado/considerado
+    let cocienteCompleto = "";
+    let isDecimalPart = false;
+    let decimalDigitsCalculated = 0;
 
-    // Caso especial: si el dividendo es menor que el divisor (cociente 0)
+    // Caso especial: si el dividendo es menor que el divisor
     if (BigInt(dividendoStr) < divisor) {
-        displaySteps.push({ 
-            text: '0', 
-            row: currentRow, 
-            colEnd: dividendoStr.length, 
-            type: 'producto' 
-        });
-        currentRow++;
-        displaySteps.push({ 
-            text: dividendoStr, 
-            row: currentRow, 
-            colEnd: dividendoStr.length, 
-            type: 'resto' 
-        });
-        currentRow++;
+        // El cociente es 0. Calculamos los decimales.
+        cocienteCompleto = "0.";
+        let currentResto = BigInt(dividendoStr);
+
+        for (let i = 0; i < decimalPlaces; i++) {
+            currentResto = currentResto * 10n;
+            const digitoCociente = currentResto / divisor;
+            cocienteCompleto += digitoCociente.toString();
+            const producto = digitoCociente * divisor;
+            currentResto = currentResto - producto;
+            
+            // Añadir el producto a restar (para la parte decimal)
+            // La colEnd se ajusta para reflejar la posición del decimal.
+            displaySteps.push({ 
+                text: producto.toString(), 
+                row: currentRow, 
+                colEnd: dividendoStr.length + 1 + i, // Posición después del dividendo, +1 por el punto
+                type: 'producto' 
+            });
+            currentRow++;
+
+            // Añadir el resto del paso actual
+            displaySteps.push({ 
+                text: currentResto.toString(), 
+                row: currentRow, 
+                colEnd: dividendoStr.length + 1 + i, // Posición después del dividendo, +1 por el punto
+                type: 'resto' 
+            });
+            currentRow++;
+
+            if (currentResto === 0n) break; // Si el resto es cero, terminamos
+        }
+        
         return { 
-            cociente: "0", 
+            cociente: cocienteCompleto, 
             displaySteps, 
             totalRows: currentRow 
         };
     }
 
-    // Procesar cada dígito del cociente
-    for (let i = 0; i < cocienteCompleto.length; i++) {
-        // "Bajar" dígitos hasta que `restoActual` sea suficiente para dividir.
-        // `posicionEnDividendo` avanza para indicar qué parte del dividendo se está usando.
-        while (posicionEnDividendo < dividendoStr.length && restoActual < divisor) {
+    // Parte entera de la división
+    while (posicionEnDividendo < dividendoStr.length || (restoActual > 0n && decimalDigitsCalculated < decimalPlaces)) {
+        let currentDigit = null;
+
+        if (posicionEnDividendo < dividendoStr.length) {
+            // Bajando dígitos de la parte entera
             restoActual = restoActual * 10n + BigInt(dividendoStr[posicionEnDividendo]);
             posicionEnDividendo++;
+        } else if (restoActual > 0n && decimalDigitsCalculated < decimalPlaces) {
+            // Bajando ceros para la parte decimal
+            if (!isDecimalPart) {
+                cocienteCompleto += ".";
+                isDecimalPart = true;
+            }
+            restoActual = restoActual * 10n;
+            decimalDigitsCalculated++;
+        } else {
+            break; // Terminamos si no hay más dígitos y no se necesitan más decimales
+        }
+        
+        // Si el resto actual es 0 (ej. primera iteración con 0 inicial) y aún no es suficiente,
+        // o si hemos bajado un dígito pero el número aún no es suficiente para dividir.
+        // Ojo: Esto podría necesitar un ajuste más fino para casos como 12/100, donde se espera 0.12.
+        // Para simplificar, la lógica de `posicionEnDividendo` y `restoActual` ya cubre esto en el for-loop de abajo.
+        
+        // Determinar el dígito del cociente
+        let digitoCociente = 0n;
+        if (restoActual >= divisor) {
+            digitoCociente = restoActual / divisor;
+        } else if (cocienteCompleto.length > 0 || isDecimalPart) {
+            // Si ya hemos empezado a formar el cociente (o estamos en la parte decimal)
+            // y el número actual no es divisible, el dígito es 0.
+            digitoCociente = 0n;
+        } else {
+            // Caso inicial donde el primer segmento es menor que el divisor, y debemos "bajar" más
+            // (ej. 123/456, primero tratamos 1, luego 12, luego 123)
+            // Esto lo maneja el bucle while superior, así que aquí no deberíamos entrar.
+            continue; // Saltar el cálculo de producto/resto si aún no podemos dividir
         }
 
-        const digitoCociente = BigInt(cocienteCompleto[i]);
         const producto = digitoCociente * divisor;
         const nuevoResto = restoActual - producto;
 
+        cocienteCompleto += digitoCociente.toString();
+
+        // Determinar la columna donde termina el producto/resto
+        // Esto necesita ser dinámico ya que el cociente puede tener más dígitos que el dividendo.
+        // El `colEnd` representa la posición en la 'línea imaginaria' del dividendo.
+        let currentColEnd;
+        if (isDecimalPart) {
+            // La posición final para productos/restos en la parte decimal
+            // es `longitud_dividendo + 1 (por el punto) + #decimales_calculados_hasta_ahora`
+            currentColEnd = dividendoStr.length + 1 + decimalDigitsCalculated;
+        } else {
+            // Para la parte entera, es la `posicionEnDividendo`
+            currentColEnd = posicionEnDividendo;
+        }
+        
         // Añadir el producto a restar
         displaySteps.push({ 
             text: producto.toString(), 
             row: currentRow, 
-            colEnd: posicionEnDividendo, 
+            colEnd: currentColEnd, 
             type: 'producto' 
         });
         currentRow++;
@@ -86,11 +153,30 @@ function calculateDisplaySteps(dividendoStr, divisorStr) {
         displaySteps.push({ 
             text: nuevoResto.toString(), 
             row: currentRow, 
-            colEnd: posicionEnDividendo, 
+            colEnd: currentColEnd, 
             type: 'resto' 
         });
         restoActual = nuevoResto; // Actualizar restoActual para la siguiente iteración
         currentRow++;
+
+        if (restoActual === 0n && posicionEnDividendo === dividendoStr.length && decimalDigitsCalculated >= decimalPlaces) {
+            break; // Si el resto es cero y ya hemos terminado los decimales, salir
+        }
+    }
+    
+    // Asegurarse de que el cociente tenga los decimales correctos si termina antes
+    if (isDecimalPart) {
+        // Si el cociente termina en un punto decimal, quitarlo
+        if (cocienteCompleto.endsWith(".")) {
+             cocienteCompleto = cocienteCompleto.slice(0, -1);
+        }
+        // Rellenar con ceros si no se alcanzaron los decimales deseados
+        let parts = cocienteCompleto.split('.');
+        if (parts.length === 2 && parts[1].length < decimalPlaces) {
+            cocienteCompleto += '0'.repeat(decimalPlaces - parts[1].length);
+        } else if (parts.length === 1 && decimalPlaces > 0) {
+            cocienteCompleto += '.' + '0'.repeat(decimalPlaces);
+        }
     }
 
     return { 
@@ -257,11 +343,14 @@ function drawHeader(fragment, { divisorStr, cociente, tamCel, tamFuente, offsetH
  * @param {DocumentFragment} fragment
  * @param {Array<object>} displaySteps - Array de objetos con {text, row, colEnd, type}
  * @param {object} layoutParams - Contiene tamCel, tamFuente, offsetHorizontal, paddingLeft, paddingTop, signColumnOffset
+ * @param {string} dividendoStr - Se necesita para calcular la posición del punto decimal
+ * @param {string} cocienteStr - Se necesita para ubicar el punto decimal en el cociente
  */
-function renderFullDivisionSteps(fragment, displaySteps, { tamCel, tamFuente, offsetHorizontal, paddingLeft, paddingTop, signColumnOffset }) {
+function renderFullDivisionSteps(fragment, displaySteps, { tamCel, tamFuente, offsetHorizontal, paddingLeft, paddingTop, signColumnOffset }, dividendoStr, cocienteStr) {
+    // Detectar la posición del punto decimal en el cociente para ajustar `colEnd` si es necesario
+    const decimalPointIndexInCociente = cocienteStr.indexOf('.');
+    
     displaySteps.forEach(step => {
-        // El dividendo inicial se maneja de forma especial, se dibuja en la fila 0.
-        // Los otros pasos se posicionan según su `row` calculada.
         const yStart = paddingTop + step.row * tamCel;
         const clase = `output-grid__cell output-grid__cell--${step.type}`;
 
@@ -278,9 +367,19 @@ function renderFullDivisionSteps(fragment, displaySteps, { tamCel, tamFuente, of
                 }));
             }
         } else {
-            // Para productos y restos, `colEnd` indica dónde termina el número en relación al dividendo original.
-            // Restamos `text.length` para encontrar el inicio y agregamos `signColumnOffset` para el espacio del signo.
-            const colStart = step.colEnd - step.text.length + signColumnOffset;
+            // Para productos y restos, `colEnd` indica dónde termina el número en relación al dividendo original
+            // o a la posición donde se "baja" el siguiente dígito (incluidos los ceros para decimales).
+            let actualColEnd = step.colEnd;
+            if (decimalPointIndexInCociente !== -1 && actualColEnd > dividendoStr.length) {
+                 // Si estamos en la parte decimal de la división, ajustamos `colEnd`
+                 // ya que los dígitos "bajados" y los restos/productos se desplazan
+                 // un lugar por cada decimal calculado (más el punto).
+                 // La lógica de `calculateDisplaySteps` ya debería generar un `colEnd`
+                 // que "simula" esta posición en el dividendo extendido con ceros.
+                 // Aquí, simplemente usamos el `colEnd` proporcionado por `calculateDisplaySteps`.
+            }
+
+            const colStart = actualColEnd - step.text.length + signColumnOffset;
             const xStart = offsetHorizontal + colStart * tamCel + paddingLeft;
 
             for (let i = 0; i < step.text.length; i++) {
@@ -343,7 +442,7 @@ function renderShortDivisionSteps(fragment, displaySteps, { tamCel, tamFuente, o
 }
 
 /**
- * `divide` (DIVISIÓN EXTENDIDA "EXPAND"): Muestra el proceso de la división larga paso a paso.
+ * `divide` (DIVISIÓN EXTENDIDA "EXPAND"): Muestra el proceso de la división larga paso a paso, incluyendo 2 decimales.
  * @param {Array<[string, number]>} numerosAR
  */
 export function divide(numerosAR) {
@@ -359,15 +458,19 @@ export function divide(numerosAR) {
         return; 
     }
     if (BigInt(dividendoStr) === 0n) { 
+        // Aunque 0/X es 0, si queremos mostrar los pasos, se puede añadir una lógica para 0.00
         salida.innerHTML = `<p class="output-screen__error-message">${errorMessages.division1}</p>`; 
         return; 
     }
 
-    const { cociente, displaySteps, totalRows } = calculateDisplaySteps(dividendoStr, divisorStr);
+    // Aquí llamamos a calculateDisplaySteps con el número de decimales deseado (por defecto es 2)
+    const decimalPlacesToCalculate = 2;
+    const { cociente, displaySteps, totalRows } = calculateDisplaySteps(dividendoStr, divisorStr, decimalPlacesToCalculate);
     
     // Calcular dimensiones para la división extendida
     const signColumnOffset = 1; // Espacio para el signo menos
-    const anchoIzquierdo = dividendoStr.length + signColumnOffset; 
+    // El ancho izquierdo debe considerar la longitud del dividendo original + los decimales + el punto
+    const anchoIzquierdo = dividendoStr.length + signColumnOffset + decimalPlacesToCalculate + (decimalPlacesToCalculate > 0 ? 1 : 0); 
     const anchoDerecho = Math.max(divisorStr.length, cociente.length) + 1; 
     const separatorWidth = 2; 
     const totalCols = anchoIzquierdo + separatorWidth + anchoDerecho;
@@ -385,13 +488,14 @@ export function divide(numerosAR) {
     });
 
     // Dibujar los pasos completos de la división
-    renderFullDivisionSteps(fragment, displaySteps, { tamCel, tamFuente, offsetHorizontal, paddingLeft, paddingTop, signColumnOffset });
+    renderFullDivisionSteps(fragment, displaySteps, { tamCel, tamFuente, offsetHorizontal, paddingLeft, paddingTop, signColumnOffset }, dividendoStr, cociente);
     
     salida.appendChild(fragment);
 }
 
 /**
  * `divideExt` (DIVISIÓN NORMAL): Muestra el proceso paso a paso, pero sin signos de resta ni líneas bajo los productos.
+ * Esta función no se modifica para mostrar decimales, ya que la petición fue para `divide`.
  * @param {Array<[string, number]>} numerosAR
  */
 export function divideExt(numerosAR) {

@@ -127,53 +127,21 @@ class HistoryPanelClass {
         });
     }
 
-    // =========================================================================
-    // === INICIO DE LA CORRECCIÓN PARA EXTRAER RESULTADOS CON DECIMALES ===
-    // =========================================================================
     extractResultText(htmlString) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlString;
-
-        // Primero, manejar casos especiales como errores o mensajes que no son una cuadrícula de cálculo.
-        const error = tempDiv.querySelector('.output-screen__error-message');
-        if (error) return error.textContent.trim();
-
-        // Buscar todas las celdas que podrían estar en la fila del resultado.
-        // Dígitos del resultado (verdes) y la coma (gris, que usa la clase 'producto').
-        const potentialResultCells = Array.from(tempDiv.querySelectorAll('.output-grid__cell--cociente, .output-grid__cell--producto'));
-        
-        if (potentialResultCells.length > 0) {
-            const rows = {};
-            // Agrupar celdas por su posición vertical (style.top)
-            potentialResultCells.forEach(cell => {
-                const top = cell.style.top;
-                // Filtrar para incluir solo dígitos, coma o signo negativo. Esto excluye el signo '+' o 'x' de la operación.
-                if (/[0-9,.-]/.test(cell.textContent) && cell.textContent.trim().length > 0) {
-                    if (!rows[top]) rows[top] = [];
-                    rows[top].push(cell);
-                }
-            });
-
-            // Encontrar la última fila (la que tiene el valor 'top' más grande)
-            const yCoords = Object.keys(rows).map(top => parseFloat(top)).filter(t => !isNaN(t));
-            if (yCoords.length > 0) {
-                const lastRowY = Math.max(...yCoords) + 'px';
-                const resultCells = rows[lastRowY];
-                if (resultCells && resultCells.length > 0) {
-                    // Ordenar las celdas de la fila por su posición horizontal (style.left)
-                    resultCells.sort((a, b) => parseFloat(a.style.left) - parseFloat(b.style.left));
-                    // Unir el texto de las celdas para formar el resultado final
-                    return resultCells.map(cell => cell.textContent).join('');
-                }
-            }
+        const cocienteElements = tempDiv.querySelectorAll('.output-grid__cell--cociente');
+        if (cocienteElements.length > 0) {
+            return Array.from(cocienteElements).map(el => el.textContent).join('');
         }
-        
-        // Fallback si la lógica anterior falla o si es una operación sin cuadrícula
+        const resto = tempDiv.querySelector('.output-grid__cell--resto'); 
+        if (resto) {
+            return `Resto: ${resto.textContent}`;
+        }
+        const error = tempDiv.querySelector('.output-screen__error-message');
+        if (error) return error.textContent;
         return tempDiv.textContent.trim().split('\n')[0] || 'Resultado';
     }
-    // =========================================================================
-    // === FIN DE LA CORRECCIÓN ===
-    // =========================================================================
     
     // --- Lógica para cerrar el panel al hacer clic fuera (sin cambios) ---
     handleOutsideClick(event) {
