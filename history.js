@@ -116,32 +116,48 @@ class HistoryPanelClass {
         });
     }
 
-    // *** ¡FUNCIÓN CLAVE COMPLETAMENTE REESCRITA Y ROBUSTA! ***
-    // Extrae el texto del resultado de forma inteligente, basándose en la posición de las celdas.
+    // *** ¡FUNCIÓN CLAVE CORREGIDA PARA LA DIVISIÓN! ***
+    // Extrae el texto del resultado de forma inteligente, tratando la división como un caso especial.
     extractResultText(htmlString) {
         const tempDiv = document.createElement('div');
         tempDiv.innerHTML = htmlString;
 
-        // 1. Seleccionamos todas las celdas que pueden formar parte de un resultado
-        //    (números, comas, y el signo negativo).
+        // 1. Detectar si es una operación de división por la presencia de celdas de divisor y cociente.
+        const isDivision = tempDiv.querySelector('.output-grid__cell--divisor') && tempDiv.querySelector('.output-grid__cell--cociente');
+
+        if (isDivision) {
+            // 2. Para la división, el resultado son *únicamente* las celdas del cociente.
+            // Esto evita que se seleccionen los productos intermedios que están más abajo.
+            const cocienteCells = Array.from(tempDiv.querySelectorAll('.output-grid__cell--cociente'));
+            
+            cocienteCells.sort((a, b) => {
+                const leftA = parseFloat(a.style.left) || 0;
+                const leftB = parseFloat(b.style.left) || 0;
+                return leftA - leftB;
+            });
+
+            // 3. Unir el texto y normalizar el separador decimal a una coma para consistencia.
+            const rawResult = cocienteCells.map(cell => cell.textContent).join('');
+            return rawResult.replace('.', ',');
+        }
+
+        // --- Lógica original para suma, resta, multiplicación, etc. ---
         const candidateCells = tempDiv.querySelectorAll('.output-grid__cell--cociente, .output-grid__cell--producto');
 
-        // 2. Si no hay celdas de resultado, buscamos un mensaje de error o resto.
         if (candidateCells.length === 0) {
             const error = tempDiv.querySelector('.output-screen__error-message');
             if (error) return error.textContent.trim();
-            const resto = tempDiv.querySelector('.output-grid__cell--resto');
-            if (resto) return `Resto: ${resto.textContent.trim()}`;
-            return 'Resultado no disponible'; // Fallback final
+            const allRestos = tempDiv.querySelectorAll('.output-grid__cell--resto');
+            if (allRestos.length > 0) {
+                 const lastResto = allRestos[allRestos.length - 1];
+                 return `Resto: ${lastResto.textContent.trim()}`;
+            }
+            return 'Resultado no disponible';
         }
 
-        // 3. Agrupamos las celdas por su línea vertical (posición 'top').
         const lines = new Map();
         candidateCells.forEach(cell => {
-            // Redondeamos el 'top' para agrupar celdas que están en la misma línea
-            // aunque tengan diferencias de subpíxeles. Usamos '|| 0' como seguridad.
             const top = Math.round(parseFloat(cell.style.top) || 0);
-            
             if (!lines.has(top)) {
                 lines.set(top, []);
             }
@@ -150,18 +166,15 @@ class HistoryPanelClass {
 
         if (lines.size === 0) return "Error al procesar resultado";
 
-        // 4. Identificamos la línea del resultado final (la que está más abajo).
         const lowestLineY = Math.max(...lines.keys());
         const resultLineCells = lines.get(lowestLineY);
 
-        // 5. Ordenamos las celdas de esa línea de izquierda a derecha.
         resultLineCells.sort((a, b) => {
             const leftA = parseFloat(a.style.left) || 0;
             const leftB = parseFloat(b.style.left) || 0;
             return leftA - leftB;
         });
 
-        // 6. Unimos el texto para formar el resultado final y correcto.
         return resultLineCells.map(cell => cell.textContent).join('');
     }
 
