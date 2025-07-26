@@ -780,8 +780,8 @@ header .subtitle a:hover {
     .history-toggle-btn {
         top: calc(env(safe-area-inset-top, 10px) + 10px); /* Posición desde el top del viewport + margen */
         right: 10px; 
-        width: 40px; /* Más pequeños en móvil */
-        height: 40px;
+        width: 60px; /* Más pequeños en móvil */
+        height: 60px;
     }
     .history-toggle-btn svg {
         width: 20px;
@@ -797,12 +797,12 @@ header .subtitle a:hover {
         height: 45px;
     }
     .bubble-btn {
-        width: 38px; 
-        height: 38px;
+        width: 60px; 
+        height: 60px;
     }
     .bubble-sub {
-        width: 30px; 
-        height: 30px;
+        width: 50px; 
+        height: 50px;
     }
 
      /* --- Ocultar el Footer en móvil --- */
