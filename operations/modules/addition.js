@@ -13,22 +13,19 @@ export async function suma(numerosAR) {
     // --- 1. Normalización para alinear decimales ---
     const partesOperandos = numerosAR.map(([valor, dec]) => {
         const valStr = valor.toString();
-        const intPart = (valStr.length > dec) ? valStr.slice(0, valStr.length - dec) : '0';
-        const decPart = valStr.slice(valStr.length - dec).padStart(dec, '0');
+        // Un número entero (dec=0) tiene toda su longitud como parte entera.
+        const intPart = (dec === 0) ? valStr : ((valStr.length > dec) ? valStr.slice(0, valStr.length - dec) : '0');
+        const decPart = (dec === 0) ? '' : valStr.slice(valStr.length - dec).padStart(dec, '0');
         return { intPart, decPart };
     });
 
     const maxIntLength = Math.max(...partesOperandos.map(p => p.intPart.length));
     const maxDecLength = Math.max(...partesOperandos.map(p => p.decPart.length));
     
-    // Calcula la longitud MÁXIMA de un operando tal como se muestra en pantalla (incluyendo la coma)
-    const maxDisplayLength = Math.max(...partesOperandos.map(p => {
-        const len = p.intPart.length + p.decPart.length;
-        return p.decPart.length > 0 ? len + 1 : len;
-    }));
-
+    // <-- CORRECCIÓN 1: Calcular el ancho total de la pantalla de forma robusta.
+    const displayWidth = maxIntLength + (maxDecLength > 0 ? 1 + maxDecLength : 0);
     // El ancho de la cuadrícula es el del número más largo + 1 para el signo de suma
-    const anchoGridEnCeldas = maxDisplayLength + 1;
+    const anchoGridEnCeldas = displayWidth + 1;
     const altoGridEnCeldas = numerosAR.length + 4;
 
     const operandosParaCalcular = partesOperandos.map(p =>
@@ -46,13 +43,26 @@ export async function suma(numerosAR) {
     const fragmentEstatico = document.createDocumentFragment();
     let yPos = paddingTop + 2.5 * tamCel; 
 
-    // Dibujar operandos, alineados a la derecha
+    // <-- CORRECCIÓN 2: Dibujar operandos usando una plantilla común para alinear la coma.
     partesOperandos.forEach((p) => {
-        let displayStr = p.decPart.length > 0 ? `${p.intPart},${p.decPart}` : p.intPart;
+        // Rellenamos las partes con espacios para que todas tengan el mismo ancho
+        const intPadded = p.intPart.padStart(maxIntLength, ' ');
+        const decPadded = p.decPart.padEnd(maxDecLength, ' ');
+
+        let displayStr;
+        if (maxDecLength > 0) {
+            displayStr = `${intPadded},${decPadded}`;
+        } else {
+            displayStr = intPadded;
+        }
         
         for (let i = 0; i < displayStr.length; i++) {
             const char = displayStr[displayStr.length - 1 - i];
-            const col = anchoGridEnCeldas - 1 - i; // Columna desde la izquierda, contando desde el borde derecho
+            
+            // No dibujamos los espacios de relleno
+            if (char === ' ') continue;
+
+            const col = anchoGridEnCeldas - 1 - i;
             const cellLeft = offsetHorizontal + col * tamCel + paddingLeft;
             const cellClass = (char === ',') ? "output-grid__cell--producto" : "output-grid__cell--dividendo";
             fragmentEstatico.appendChild(crearCelda(`output-grid__cell ${cellClass}`, char, { left: `${cellLeft}px`, top: `${yPos}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: `${tamFuente}px` }));
@@ -61,7 +71,7 @@ export async function suma(numerosAR) {
     });
 
     // Dibujar el signo de suma (+) en la columna correcta
-    const signCol = anchoGridEnCeldas - maxDisplayLength - 1;
+    const signCol = anchoGridEnCeldas - displayWidth - 1; // <-- CORRECCIÓN 3: Usar el ancho calculado
     const signLeft = offsetHorizontal + signCol * tamCel + paddingLeft;
     const signTop = yPos - tamCel;
     fragmentEstatico.appendChild(crearCelda("output-grid__cell output-grid__cell--producto", "+", { left: `${signLeft}px`, top: `${signTop}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: `${tamFuente}px`, textAlign: 'center' }));
@@ -85,7 +95,6 @@ export async function suma(numerosAR) {
         const sumaStr = sumaColumna.toString();
         const newCarry = Math.floor(sumaColumna / 10);
         
-        // Mapear la columna de cálculo a la columna visual correcta
         const digitsToTheRight = (longitudMaximaTotal - 1) - i;
         const hasCommaToTheRight = maxDecLength > 0 && digitsToTheRight >= maxDecLength;
         const visualCellsToTheRight = digitsToTheRight + (hasCommaToTheRight ? 1 : 0);
@@ -93,7 +102,6 @@ export async function suma(numerosAR) {
 
         const xPosColumna = offsetHorizontal + visualCol * tamCel + paddingLeft;
         
-        // Animación de la suma intermedia
         const centroDeColumna = xPosColumna + (tamCel / 2);
         const anchoCeldaTemp = tamCel * sumaStr.length * 0.7;
         const leftPosTemp = centroDeColumna - (anchoCeldaTemp / 2);
@@ -103,7 +111,6 @@ export async function suma(numerosAR) {
         celdaTemp.remove();
         sumasIntermediasData.push({ value: sumaStr, x: leftPosTemp, width: anchoCeldaTemp });
 
-        // Animación de la llevada
         if (newCarry > 0) {
             const carryDigitsToRight = digitsToTheRight + 1;
             const carryHasCommaToRight = maxDecLength > 0 && carryDigitsToRight >= maxDecLength;
