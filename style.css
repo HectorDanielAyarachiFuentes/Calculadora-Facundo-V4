@@ -805,11 +805,9 @@ header .subtitle a:hover {
         height: 30px;
     }
 
-    /* Footer en móvil */
+     /* --- Ocultar el Footer en móvil --- */
     .main-footer {
-        margin-top: 20px;
-        font-size: 0.75rem;
-        padding-bottom: env(safe-area-inset-bottom, 10px); 
+        display: none; /* <-- ESTA LÍNEA LO OCULTA EN MÓVILES */
     }
 }
 
