@@ -1,5 +1,5 @@
 // =======================================================
-// --- operations/modules/subtraction.js (VERSIÓN FINAL CON ANIMACIÓN EN BUCLE) ---
+// --- operations/modules/subtraction.js (VERSIÓN CON CORRECCIÓN FINAL DE DIBUJO) ---
 // =======================================================
 "use strict";
 
@@ -7,13 +7,8 @@ import { calculateLayout } from '../utils/layout-calculator.js';
 import { crearCelda, crearCeldaAnimada, esperar, crearFlechaLlevada } from '../utils/dom-helpers.js';
 import { salida } from '../../config.js';
 
-// Variable para controlar el bucle de animación y poder detenerlo
 let animationLoopId = null;
 
-/**
- * Inicia un bucle de animación para los elementos de préstamo.
- * @param {NodeListOf<Element>} elements - Una NodeList de flechas y números a animar.
- */
 async function startBorrowLoopAnimation(elements) {
     if (animationLoopId) clearTimeout(animationLoopId);
     if (elements.length === 0) return;
@@ -21,31 +16,25 @@ async function startBorrowLoopAnimation(elements) {
     const loop = async () => {
         for (const element of elements) {
             if (element.tagName.toLowerCase() === 'svg') {
-                // Animar la flecha
-                const path = element.querySelector('path[d^="M"]'); // Selecciona el path principal de la flecha
+                const path = element.querySelector('path[d^="M"]');
                 if (path) {
                     const length = path.getTotalLength();
                     path.style.transition = 'none';
                     path.style.strokeDashoffset = length;
-                    path.offsetHeight; // Forzar reflow del navegador
+                    path.offsetHeight;
                     path.style.transition = 'stroke-dashoffset .8s cubic-bezier(0.68, -0.55, 0.27, 1.55)';
                     path.style.strokeDashoffset = '0';
                 }
             } else {
-                // Animar el número con un pulso
                 element.classList.add('pulse');
                 setTimeout(() => element.classList.remove('pulse'), 500);
             }
-            await esperar(200); // Pequeña pausa entre cada animación de la cadena
+            await esperar(200);
         }
-        
-        // Esperar un poco antes de reiniciar el bucle completo
         animationLoopId = setTimeout(loop, 3000);
     };
-
     loop();
 }
-
 
 function calculateBorrows(n1Str, n2Str) {
     const borrowChains = [];
@@ -86,76 +75,92 @@ function crearTachadoAnimado(styles) {
     return line;
 }
 
+function formatWithComma(numStr, dec) {
+    if (dec === 0) return numStr;
+    const padded = numStr.padStart(dec + 1, '0');
+    return `${padded.slice(0, -dec)},${padded.slice(-dec)}`;
+}
+
 export async function resta(numerosAR) {
     salida.innerHTML = "";
     const fragment = document.createDocumentFragment();
     if (animationLoopId) clearTimeout(animationLoopId);
 
-    const minuendoStr = numerosAR[0][0];
-    const sustraendoStr = numerosAR[1][0];
-    const minuendoBigInt = BigInt(minuendoStr);
-    const sustraendoBigInt = BigInt(sustraendoStr);
+    // --- 1. Normalización de operandos ---
+    const [minuendoStrRaw, minuendoDec] = numerosAR[0];
+    const [sustraendoStrRaw, sustraendoDec] = numerosAR[1];
     
-    const isNegative = minuendoBigInt < sustraendoBigInt;
-    const n1Anim = isNegative ? sustraendoStr : minuendoStr;
-    const n2Anim = isNegative ? minuendoStr : sustraendoStr;
-    const resultadoAbsStr = (isNegative ? sustraendoBigInt - minuendoBigInt : minuendoBigInt - sustraendoBigInt).toString();
+    const maxDec = Math.max(minuendoDec, sustraendoDec);
 
-    const maxLength = Math.max(n1Anim.length, n2Anim.length);
-    const n1Padded = n1Anim.padStart(maxLength, '0');
-    const n2Padded = n2Anim.padStart(maxLength, '0');
+    const minuendoPadded = minuendoStrRaw.padEnd(minuendoStrRaw.length + maxDec - minuendoDec, '0');
+    const sustraendoPadded = sustraendoStrRaw.padEnd(sustraendoStrRaw.length + maxDec - sustraendoDec, '0');
+
+    const maxLen = Math.max(minuendoPadded.length, sustraendoPadded.length);
+
+    const n1 = minuendoPadded.padStart(maxLen, '0');
+    const n2 = sustraendoPadded.padStart(maxLen, '0');
+
+    const minuendoBigInt = BigInt(n1);
+    const sustraendoBigInt = BigInt(n2);
+
+    const isNegative = minuendoBigInt < sustraendoBigInt;
+    const n1Anim = isNegative ? n2 : n1; 
+    const n2Anim = isNegative ? n1 : n2; 
+    const resultadoAbsStr = (isNegative ? sustraendoBigInt - minuendoBigInt : minuendoBigInt - sustraendoBigInt).toString();
     
-    const resultDisplayLength = isNegative ? resultadoAbsStr.length + 1 : resultadoAbsStr.length;
-    const maxWidthInChars = Math.max(maxLength + 1, resultDisplayLength);
+    // --- 2. Cálculo del Layout ---
+    const n1Display = formatWithComma(n1Anim, maxDec);
+    const n2Display = formatWithComma(n2Anim, maxDec);
+    const maxDisplayLength = Math.max(n1Display.length, n2Display.length);
+    
+    const anchoGridInCeldas = maxDisplayLength + 1; 
     const altoGridInRows = 5;
-    const { tamCel, tamFuente, offsetHorizontal, paddingLeft, paddingTop } = calculateLayout(salida, maxWidthInChars, altoGridInRows);
+    const { tamCel, tamFuente, offsetHorizontal, paddingLeft, paddingTop } = calculateLayout(salida, anchoGridInCeldas, altoGridInRows);
     
+    // --- 3. Dibujo de elementos estáticos ---
     const yPosMinuendo = paddingTop + tamCel;
     const yPosSustraendo = yPosMinuendo + tamCel;
-    
-    for (let i = 0; i < n1Padded.length; i++) {
-        const leftPos = offsetHorizontal + (maxWidthInChars - n1Padded.length + i) * tamCel + paddingLeft;
-        fragment.appendChild(crearCelda("output-grid__cell output-grid__cell--dividendo", n1Padded[i], { left: `${leftPos}px`, top: `${yPosMinuendo}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: tamFuente + 'px' }));
+
+    for (let i = 0; i < n1Display.length; i++) {
+        const char = n1Display[n1Display.length - 1 - i];
+        const col = anchoGridInCeldas - 1 - i;
+        const leftPos = offsetHorizontal + col * tamCel + paddingLeft;
+        const cellClass = char === ',' ? 'output-grid__cell--producto' : 'output-grid__cell--dividendo';
+        fragment.appendChild(crearCelda(cellClass, char, { left: `${leftPos}px`, top: `${yPosMinuendo}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: tamFuente + 'px' }));
     }
-    const signLeft = offsetHorizontal + (maxWidthInChars - n2Padded.length - 1) * tamCel + paddingLeft;
+    
+    const signCol = anchoGridInCeldas - maxDisplayLength - 1;
+    const signLeft = offsetHorizontal + signCol * tamCel + paddingLeft;
     fragment.appendChild(crearCelda("output-grid__cell output-grid__cell--producto", "-", { left: `${signLeft}px`, top: `${yPosSustraendo}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: tamFuente + 'px' }));
-    for (let i = 0; i < n2Padded.length; i++) {
-        const leftPos = offsetHorizontal + (maxWidthInChars - n2Padded.length + i) * tamCel + paddingLeft;
-        fragment.appendChild(crearCelda("output-grid__cell output-grid__cell--producto", n2Padded[i], { left: `${leftPos}px`, top: `${yPosSustraendo}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: tamFuente + 'px' }));
+    
+    for (let i = 0; i < n2Display.length; i++) {
+        const char = n2Display[n2Display.length - 1 - i];
+        const col = anchoGridInCeldas - 1 - i;
+        const leftPos = offsetHorizontal + col * tamCel + paddingLeft;
+        const cellClass = char === ',' ? 'output-grid__cell--producto' : 'output-grid__cell--dividendo';
+        fragment.appendChild(crearCelda(cellClass, char, { left: `${leftPos}px`, top: `${yPosSustraendo}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: tamFuente + 'px' }));
     }
     salida.appendChild(fragment);
     await esperar(500);
 
-    const borrowChains = calculateBorrows(n1Padded, n2Padded);
-    const borrowNumberCells = {}; 
+    // --- 4. Animación de préstamos ---
+    const borrowChains = calculateBorrows(n1Anim, n2Anim);
+    const borrowNumberCells = {};
 
     for (const chain of borrowChains) {
-        for (let i = 0; i < chain.length - 1; i++) {
-            const fromIndex = chain[i].index;
-            const toIndex = chain[i+1].index;
-            const fromCol = maxWidthInChars - n1Padded.length + fromIndex;
-            const toCol = maxWidthInChars - n1Padded.length + toIndex;
-            const xFrom = offsetHorizontal + fromCol * tamCel + paddingLeft;
-            const yNewNum = yPosMinuendo - tamCel * 0.7;
-            const arrowLeft = xFrom;
-            const arrowTop = yNewNum - tamCel * 0.1;
-            const arrowWidth = (toCol - fromCol) * tamCel;
-            const arrowHeight = tamCel * 0.8;
-            const arrow = crearFlechaLlevada(arrowLeft, arrowTop, arrowWidth, arrowHeight);
-            arrow.classList.add('loop-anim-element'); // Añadir clase para el bucle
-            salida.appendChild(arrow);
-        }
-        await esperar(800);
-
         for (const step of chain) {
-            const col = maxWidthInChars - n1Padded.length + step.index;
-            const xPos = offsetHorizontal + col * tamCel + paddingLeft;
+            const digitsToRight = n1Anim.length - 1 - step.index;
+            const hasCommaToRight = maxDec > 0 && digitsToRight >= maxDec;
+            const visualCellsToRight = digitsToRight + (hasCommaToRight ? 1 : 0);
+            const visualCol = anchoGridInCeldas - 1 - visualCellsToRight;
+
+            const xPos = offsetHorizontal + visualCol * tamCel + paddingLeft;
             const yNewNum = yPosMinuendo - tamCel * 0.7;
 
             if (borrowNumberCells[step.index]) {
                 salida.removeChild(borrowNumberCells[step.index]);
             }
-
+            
             salida.appendChild(crearTachadoAnimado({ left: `${xPos}px`, top: `${yPosMinuendo + tamCel / 2}px`, width: `${tamCel}px` }));
             await esperar(300);
 
@@ -166,45 +171,47 @@ export async function resta(numerosAR) {
             const newNumber = crearCeldaAnimada("output-grid__cell output-grid__cell--resto", numStr, {
                 left: `${xPos + leftOffset}px`, top: `${yNewNum}px`, width: `${tamCel * widthMultiplier}px`, height: `${tamCel}px`, fontSize: `${tamFuente * 0.7}px`
             }, 0);
-            newNumber.classList.add('loop-anim-element'); // Añadir clase para el bucle
-            
+            newNumber.classList.add('loop-anim-element');
             salida.appendChild(newNumber);
-            borrowNumberCells[step.index] = newNumber; 
+            borrowNumberCells[step.index] = newNumber;
             await esperar(300);
         }
         await esperar(500);
     }
     
+    // --- 5. Dibujo de línea y resultado FINAL ---
     const yPosLinea = yPosSustraendo + tamCel;
-    const lineLeft = offsetHorizontal + paddingLeft;
-    const totalBlockWidth = maxWidthInChars * tamCel;
-    const linea = crearCelda("output-grid__line", "", { left: `${lineLeft}px`, top: `${yPosLinea}px`, width: `0px`, height: `2px`, transition: 'width 0.4s ease-out' });
+    const lineLeft = offsetHorizontal + signCol * tamCel + paddingLeft;
+    const totalBlockWidth = (anchoGridInCeldas - signCol) * tamCel;
+    const linea = crearCelda("output-grid__line", "", { left: `${lineLeft}px`, top: `${yPosLinea}px`, width: `${totalBlockWidth}px`, height: `2px`});
     salida.appendChild(linea);
-
-    requestAnimationFrame(() => { linea.style.width = `${totalBlockWidth}px`; });
-    await esperar(400);
+    await esperar(10); // Pequeña espera para asegurar que la línea se renderiza
 
     const yPosResultado = yPosLinea + tamCel * 0.2;
-    const resultLeftOffset = maxWidthInChars - resultadoAbsStr.length;
-    let animationDelayStart = 0;
-    const delayStep = 80;
-
+    const resultadoDisplay = formatWithComma(resultadoAbsStr, maxDec);
+    // === CORRECCIÓN CLAVE: Usar la fuente estándar (tamFuente), sin escalar a 0.9 ===
+    const resultFontSize = `${tamFuente}px`; 
+    
     if (isNegative) {
-        const signLeftPos = offsetHorizontal + (resultLeftOffset - 1) * tamCel + paddingLeft;
-        salida.appendChild(crearCeldaAnimada("output-grid__cell output-grid__cell--cociente", "-", {
-            left: `${signLeftPos}px`, top: `${yPosResultado}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: tamFuente + 'px'
-        }, 0));
-        animationDelayStart = 1;
+        const resultSignCol = anchoGridInCeldas - resultadoDisplay.length - 1;
+        const resultSignLeft = offsetHorizontal + resultSignCol * tamCel + paddingLeft;
+        // Usar crearCelda normal (sin animación) y la fuente estándar para consistencia
+        salida.appendChild(crearCelda("output-grid__cell output-grid__cell--cociente", "-", {
+            left: `${resultSignLeft}px`, top: `${yPosResultado}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: resultFontSize
+        }));
     }
     
-    for (let i = 0; i < resultadoAbsStr.length; i++) {
-        const leftPos = offsetHorizontal + (resultLeftOffset + i) * tamCel + paddingLeft;
-        salida.appendChild(crearCeldaAnimada("output-grid__cell output-grid__cell--cociente", resultadoAbsStr[i], {
-            left: `${leftPos}px`, top: `${yPosResultado}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: `${tamFuente * 0.9}px`
-        }, (animationDelayStart + i) * delayStep));
+    for (let i = 0; i < resultadoDisplay.length; i++) {
+        const char = resultadoDisplay[resultadoDisplay.length - 1 - i];
+        const col = anchoGridInCeldas - 1 - i;
+        const leftPos = offsetHorizontal + col * tamCel + paddingLeft;
+        const cellClass = char === ',' ? 'output-grid__cell--producto' : 'output-grid__cell--cociente';
+        // Usar crearCelda normal (sin animación) y la fuente estándar
+        salida.appendChild(crearCelda(cellClass, char, {
+            left: `${leftPos}px`, top: `${yPosResultado}px`, width: `${tamCel}px`, height: `${tamCel}px`, fontSize: resultFontSize
+        }));
     }
     
-    // Iniciar el bucle de animación final
     const elementsToLoop = salida.querySelectorAll('.loop-anim-element');
     startBorrowLoopAnimation(elementsToLoop);
 }
